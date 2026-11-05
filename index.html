@@ -2,19 +2,64 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>샐러리아 메뉴판 전 메뉴 가격 · 옵션 · 영양성분 탐색기</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    :root { --background: #f8fafc; --foreground: #0f172a; --card: #ffffff; --border: #e2e8f0; --primary: #059669; --primary-foreground: #ffffff; --secondary: #f1f5f9; --secondary-foreground: #334155; --muted-foreground: #64748b; --placeholder: #94a3b8; }
-    @media (prefers-color-scheme: dark) { :root { --background: #0f172a; --foreground: #f8fafc; --card: #1e293b; --border: #334155; --primary: #10b981; --primary-foreground: #064e3b; --secondary: #334155; --secondary-foreground: #e2e8f0; --muted-foreground: #94a3b8; --placeholder: #64748b; } }
+    :root {
+      --background: #f8fafc;
+      --foreground: #0f172a;
+      --card: #ffffff;
+      --card-foreground: #0f172a;
+      --primary: #10b981;
+      --primary-foreground: #ffffff;
+      --secondary: #f1f5f9;
+      --secondary-foreground: #334155;
+      --muted: #f1f5f9;
+      --muted-foreground: #64748b;
+      --accent: #f1f5f9;
+      --accent-foreground: #0f172a;
+      --border: #e2e8f0;
+      --placeholder: #94a3b8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --background: #0f172a;
+        --foreground: #f8fafc;
+        --card: #1e293b;
+        --card-foreground: #f8fafc;
+        --primary: #10b981;
+        --primary-foreground: #ffffff;
+        --secondary: #334155;
+        --secondary-foreground: #f1f5f9;
+        --muted: #1e293b;
+        --muted-foreground: #94a3b8;
+        --accent: #334155;
+        --accent-foreground: #f8fafc;
+        --border: #334155;
+        --placeholder: #64748b;
+      }
+    }
     .custom-scroll::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     .custom-scroll::-webkit-scrollbar-thumb {
       background: var(--border);
       border-radius: 9999px;
+    }
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    .safe-bottom {
+      padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
     }
     .receipt-paper {
       background: #fffdf9;
@@ -53,138 +98,180 @@
     }
   </style>
 </head>
-<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen pb-36">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-    <!-- Header -->
-    <header class="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-[var(--border)] pb-5">
-      <div>
-        <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-xs font-medium bg-[var(--secondary)] text-[var(--secondary-foreground)] mb-2">
-          <span>🥗 메뉴판 전 메뉴 115종 수록 · 실물 사진 96종 · 영수증 출력 완비</span>
-        </div>
-        <h1 class="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--foreground)]">
-          메뉴판 전 메뉴 가격 · 옵션 · 영양성분 탐색기
-        </h1>
-        <p class="text-sm text-[var(--muted-foreground)] mt-1">
-          원하는 메뉴와 옵션(통밀·드레싱·맛·꿀)을 담아 실물 영수증처럼 총 결제금액과 총 영양성분표를 확인해보세요.
-        </p>
-      </div>
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen pb-32 transition-colors">
+  <!-- Toast Notification -->
+  <div id="toastMsg" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-2 transition-all duration-200 bg-slate-900/95 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+  </div>
 
-      <!-- View Mode Toggle & Receipt Button -->
-      <div class="flex flex-wrap items-center gap-2 self-start md:self-auto">
-        <button
-          onclick="openReceiptModal()"
-          class="px-3.5 py-2 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold shadow-sm hover:opacity-90 transition flex items-center gap-1.5"
-        >
-          <span>🧾 영수증 보기</span>
-          <span id="headerReceiptCount" class="px-1.5 py-0.5 rounded-full bg-black/20 text-white text-xs">0</span>
-        </button>
-        <div class="inline-flex rounded-lg border border-[var(--border)] bg-[var(--card)] p-1">
-          <button id="btnViewCard" onclick="setViewMode('card')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition bg-[var(--primary)] text-[var(--primary-foreground)]">
-            카드 뷰
-          </button>
-          <button id="btnViewTable" onclick="setViewMode('table')" class="px-3 py-1.5 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
-            테이블 비교 뷰
-          </button>
-        </div>
-      </div>
-    </header>
+  <!-- App Shell (switches between max-w-7xl in PC mode and max-w-[460px] mobile app frame in Mobile mode) -->
+  <div id="appShell" class="min-h-screen transition-all duration-200">
+    <!-- Sticky Top App Bar & Category Tabs -->
+    <div class="sticky top-0 z-30 bg-[var(--background)]/95 backdrop-blur-md border-b border-[var(--border)]">
+      <div id="headerInner" class="max-w-7xl mx-auto px-3 sm:px-6 pt-2.5 pb-2 space-y-2">
+        <!-- Top Row: Title + PC/Mobile Version Switch + Receipt -->
+        <div class="flex items-center justify-between gap-2 flex-wrap">
+          <div class="min-w-0 flex items-center gap-2">
+            <span id="appTitle" class="text-base sm:text-xl font-extrabold tracking-tight text-[var(--foreground)] truncate">
+              🥗 샐러리아 메뉴·영양 탐색기
+            </span>
+            <span id="pcBadge" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--secondary)] text-[var(--secondary-foreground)]">
+              115종 완비
+            </span>
+          </div>
 
-    <!-- Category Tabs -->
-    <div class="flex flex-wrap gap-1.5" id="categoryTabs"></div>
+          <!-- Right Controls: Version Switch (PC <-> Mobile) + View Mode + Receipt -->
+          <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+            <!-- PC / Mobile Version Switcher -->
+            <div class="inline-flex rounded-lg border-2 border-[var(--primary)] bg-[var(--card)] p-0.5 shadow-xs" title="PC 버전 / 모바일 버전 전환">
+              <button
+                id="btnModePC"
+                onclick="setDeviceMode('pc')"
+                class="px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1"
+              >
+                <span>🖥️ PC버전</span>
+              </button>
+              <button
+                id="btnModeMobile"
+                onclick="setDeviceMode('mobile')"
+                class="px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1"
+              >
+                <span>📱 모바일버전</span>
+              </button>
+            </div>
 
-    <!-- Category Option Info & Global Option Controls Banner -->
-    <div id="categoryBanner" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 text-sm flex flex-col lg:flex-row lg:items-center justify-between gap-3 shadow-sm">
-    </div>
+            <!-- Sub View Mode Toggle -->
+            <div class="inline-flex rounded-lg border border-[var(--border)] bg-[var(--card)] p-0.5">
+              <button id="btnViewCard" onclick="setViewMode('card')" class="px-2 py-1 rounded-md text-xs font-semibold transition bg-[var(--primary)] text-[var(--primary-foreground)]">
+                1열/카드
+              </button>
+              <button id="btnViewCompact" onclick="setViewMode('compact')" class="px-2 py-1 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                2열
+              </button>
+              <button id="btnViewTable" onclick="setViewMode('table')" class="px-2 py-1 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+                표
+              </button>
+            </div>
 
-    <!-- Controls: Search, Sort, Quick Filters -->
-    <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 space-y-3.5 shadow-sm">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
-        <!-- Search -->
-        <div class="md:col-span-5 relative">
-          <input
-            id="searchInput"
-            type="text"
-            placeholder="메뉴명 검색 (예: 닭가슴살, 연어, 부채살, 요거트, 떡볶이, 스프, 커리...)"
-            oninput="render()"
-            class="w-full pl-9 pr-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--placeholder)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-          />
-          <svg class="w-4 h-4 text-[var(--muted-foreground)] absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
-          </svg>
-        </div>
-
-        <!-- Sort -->
-        <div class="md:col-span-4">
-          <select
-            id="sortSelect"
-            onchange="render()"
-            class="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-          >
-            <option value="default">정렬: 메뉴판 기본순</option>
-            <option value="price_asc">💰 낮은 가격순</option>
-            <option value="price_desc">💰 높은 가격순</option>
-            <option value="protein_desc">💪 높은 단백질순 (g)</option>
-            <option value="cal_asc">🔥 낮은 열량순 (kcal)</option>
-            <option value="cal_desc">🔥 높은 열량순 (kcal)</option>
-            <option value="protein_per_price">⚡ 가성비 단백질순 (1,000원당 단백질 g)</option>
-            <option value="protein_per_cal">🎯 고밀도 단백질순 (100kcal당 단백질 g)</option>
-            <option value="sugar_asc">🍬 낮은 당류순 (g)</option>
-            <option value="sodium_asc">🧂 낮은 나트륨순 (mg)</option>
-          </select>
+            <!-- Receipt Quick Button -->
+            <button
+              onclick="openReceiptModal()"
+              class="px-2.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-1"
+            >
+              <span>🧾 영수증</span>
+              <span id="headerReceiptCount" class="px-1.5 py-0.2 rounded-full bg-black/20 text-white text-xs">0</span>
+            </button>
+          </div>
         </div>
 
-        <!-- Reset -->
-        <div class="md:col-span-3 flex items-center justify-end gap-2">
-          <span id="resultCount" class="text-xs font-medium text-[var(--muted-foreground)]"></span>
-          <button
-            onclick="resetFilters()"
-            class="px-3 py-2 rounded-lg border border-[var(--border)] text-xs font-medium hover:bg-[var(--secondary)] transition"
-          >
-            필터 초기화
-          </button>
-        </div>
-      </div>
-
-      <!-- Quick Filter Chips -->
-      <div class="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border)]">
-        <span class="text-xs font-semibold text-[var(--muted-foreground)] mr-1">빠른 조건 필터:</span>
-        <button onclick="toggleQuickFilter('onlyNutrition')" id="qf_onlyNutrition" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition">
-          📊 영양성분 있는 메뉴만 (73종)
-        </button>
-        <button onclick="toggleQuickFilter('highProtein')" id="qf_highProtein" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition">
-          💪 고단백 (30g 이상)
-        </button>
-        <button onclick="toggleQuickFilter('lowCal')" id="qf_lowCal" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition">
-          🥗 저칼로리 (400kcal 이하)
-        </button>
-        <button onclick="toggleQuickFilter('lowSugar')" id="qf_lowSugar" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition">
-          🍬 저당 (10g 이하)
-        </button>
-        <button onclick="toggleQuickFilter('under10k')" id="qf_under10k" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition">
-          💸 1만원 이하 (≤ 10,000원)
-        </button>
-        <button onclick="toggleQuickFilter('lowSodium')" id="qf_lowSodium" class="px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition">
-          🧂 저나트륨 (600mg 이하)
-        </button>
+        <!-- Category Tabs -->
+        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5" id="categoryTabs"></div>
       </div>
     </div>
 
-    <!-- Main Content Container -->
-    <div id="menuContainer"></div>
+    <div id="mainInner" class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-3">
+      <!-- Category Option Info & Global Option Controls Banner -->
+      <div id="categoryBanner" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm">
+      </div>
+
+      <!-- Compact Controls: Search, Sort, Horizontal Quick Filters -->
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 space-y-2.5 shadow-sm">
+        <div id="searchSortRow" class="flex flex-col sm:flex-row gap-2">
+          <!-- Search -->
+          <div class="relative flex-1">
+            <input
+              id="searchInput"
+              type="search"
+              placeholder="메뉴 검색 (닭가슴살, 연어, 부채살, 요거트...)"
+              oninput="render()"
+              class="w-full pl-8 pr-8 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--placeholder)] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            />
+            <svg class="w-4 h-4 text-[var(--muted-foreground)] absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
+            </svg>
+          </div>
+
+          <!-- Sort + Reset Row -->
+          <div class="flex items-center gap-1.5">
+            <select
+              id="sortSelect"
+              onchange="render()"
+              class="flex-1 sm:w-56 px-2.5 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+            >
+              <option value="default">정렬: 메뉴판 기본순</option>
+              <option value="price_asc">💰 낮은 가격순</option>
+              <option value="price_desc">💰 높은 가격순</option>
+              <option value="protein_desc">💪 높은 단백질순 (g)</option>
+              <option value="cal_asc">🔥 낮은 열량순 (kcal)</option>
+              <option value="cal_desc">🔥 높은 열량순 (kcal)</option>
+              <option value="protein_per_price">⚡ 가성비 단백질순 (1천원당 g)</option>
+              <option value="protein_per_cal">🎯 고밀도 단백질순 (100kcal당 g)</option>
+              <option value="sugar_asc">🍬 낮은 당류순 (g)</option>
+              <option value="sodium_asc">🧂 낮은 나트륨순 (mg)</option>
+            </select>
+            <button
+              onclick="resetFilters()"
+              class="px-2.5 py-2 rounded-lg border border-[var(--border)] text-xs font-medium hover:bg-[var(--secondary)] shrink-0 transition"
+              title="필터 초기화"
+            >
+              초기화
+            </button>
+          </div>
+        </div>
+
+        <!-- Horizontal Swipeable Quick Filter Chips -->
+        <div class="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border)]">
+          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-0.5">
+            <button onclick="toggleQuickFilter('onlyNutrition')" id="qf_onlyNutrition" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              📊 성분표보유(73)
+            </button>
+            <button onclick="toggleQuickFilter('highProtein')" id="qf_highProtein" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              💪 고단백(30g↑)
+            </button>
+            <button onclick="toggleQuickFilter('lowCal')" id="qf_lowCal" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              🥗 저칼로리(≤400)
+            </button>
+            <button onclick="toggleQuickFilter('lowSugar')" id="qf_lowSugar" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              🍬 저당(≤10g)
+            </button>
+            <button onclick="toggleQuickFilter('under10k')" id="qf_under10k" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              💸 1만원이하
+            </button>
+            <button onclick="toggleQuickFilter('lowSodium')" id="qf_lowSodium" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              🧂 저나트륨(≤600)
+            </button>
+          </div>
+          <span id="resultCount" class="text-xs font-semibold text-[var(--muted-foreground)] whitespace-nowrap shrink-0 pl-1"></span>
+        </div>
+      </div>
+
+      <!-- Main Content Container -->
+      <div id="menuContainer"></div>
+    </div>
   </div>
 
   <!-- Floating Meal Tray (Bottom Bar) -->
-  <div id="mealTray" class="fixed bottom-0 inset-x-0 bg-[var(--card)] border-t border-[var(--border)] shadow-2xl transition-transform duration-200 z-40 translate-y-full">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-      <div class="flex items-center gap-2.5 overflow-x-auto custom-scroll py-1" id="trayItems"></div>
-      <div class="flex flex-wrap items-center justify-between lg:justify-end gap-3 border-t lg:border-t-0 pt-2 lg:pt-0 border-[var(--border)]">
-        <div id="trayTotals" class="flex flex-wrap items-center gap-2.5 text-xs sm:text-sm"></div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button onclick="openReceiptModal()" class="px-3.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold shadow-sm hover:opacity-90 transition flex items-center gap-1">
-            <span>🧾 영수증 발행</span>
+  <div id="mealTray" class="fixed bottom-0 inset-x-0 z-40 translate-y-full transition-transform duration-200 pointer-events-none">
+    <div id="mealTrayInner" class="max-w-7xl mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-3 sm:px-6 pt-2.5 pb-2 space-y-2 pointer-events-auto safe-bottom">
+      <!-- Expandable Tray Items Drawer -->
+      <div id="trayDrawer" class="hidden border-b border-[var(--border)] pb-2">
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-xs font-bold text-[var(--muted-foreground)]">담긴 메뉴 목록 (-/+ 수량 조절)</span>
+          <button onclick="clearTray()" class="text-xs text-rose-500 font-semibold hover:underline">전체 비우기</button>
+        </div>
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="trayItems"></div>
+      </div>
+
+      <!-- Compact Summary Bar -->
+      <div class="flex items-center justify-between gap-2">
+        <div onclick="toggleTrayDrawer()" class="flex-1 min-w-0 cursor-pointer">
+          <div id="trayTotals" class="truncate"></div>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button onclick="toggleTrayDrawer()" id="btnTrayToggle" class="px-2.5 py-2 rounded-xl border border-[var(--border)] text-xs font-semibold hover:bg-[var(--secondary)]">
+            목록 ▲
           </button>
-          <button onclick="clearTray()" class="px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs font-medium hover:bg-[var(--secondary)]">
-            비우기
+          <button onclick="openReceiptModal()" class="px-4 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
+            <span>🧾 영수증 보기</span>
           </button>
         </div>
       </div>
@@ -192,17 +279,17 @@
   </div>
 
   <!-- Image & Option Detail Modal -->
-  <div id="imageModal" onclick="closeImageModal()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
-    <div onclick="event.stopPropagation()" class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 max-w-lg w-full shadow-2xl">
+  <div id="imageModal" onclick="closeImageModal()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden items-end sm:items-center justify-center sm:p-4">
+    <div onclick="event.stopPropagation()" class="bg-[var(--card)] border-t sm:border border-[var(--border)] rounded-t-2xl sm:rounded-2xl p-4 sm:p-5 max-w-lg w-full shadow-2xl max-h-[90vh] overflow-y-auto safe-bottom">
       <div id="imageModalContent"></div>
     </div>
   </div>
 
   <!-- Receipt Modal -->
-  <div id="receiptModal" onclick="closeReceiptModal()" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden items-center justify-center p-4 overflow-y-auto">
-    <div onclick="event.stopPropagation()" class="my-auto w-full max-w-md">
+  <div id="receiptModal" onclick="closeReceiptModal()" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden items-end sm:items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div onclick="event.stopPropagation()" class="my-auto w-full max-w-md max-h-[92vh] overflow-y-auto rounded-xl sm:rounded-none">
       <div class="receipt-zig-top"></div>
-      <div class="receipt-paper px-6 py-5 space-y-4">
+      <div class="receipt-paper px-4 sm:px-6 py-4 sm:py-5 space-y-3.5">
         <div id="receiptModalContent"></div>
       </div>
       <div class="receipt-zig-bottom"></div>
@@ -450,9 +537,11 @@
     });
 
     let state = {
+      deviceMode: window.innerWidth < 768 ? 'mobile' : 'pc',
       category: 'ALL',
       viewMode: 'card',
       globalWholeWheat: false,
+      mobileBannerOpen: false,
       quickFilters: {
         onlyNutrition: false,
         highProtein: false,
@@ -463,6 +552,53 @@
       },
       tray: []
     };
+
+    function setDeviceMode(mode) {
+      state.deviceMode = mode;
+      const isMobile = mode === 'mobile';
+
+      const btnPC = document.getElementById('btnModePC');
+      const btnMobile = document.getElementById('btnModeMobile');
+      if (btnPC && btnMobile) {
+        btnPC.className = isMobile
+          ? 'px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+          : 'px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs';
+        btnMobile.className = isMobile
+          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs'
+          : 'px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+      }
+
+      const appShell = document.getElementById('appShell');
+      const headerInner = document.getElementById('headerInner');
+      const mainInner = document.getElementById('mainInner');
+      const mealTrayInner = document.getElementById('mealTrayInner');
+      const searchSortRow = document.getElementById('searchSortRow');
+      const btnViewCard = document.getElementById('btnViewCard');
+
+      if (isMobile) {
+        appShell.className = 'max-w-[460px] mx-auto min-h-screen border-x border-[var(--border)] shadow-2xl bg-[var(--background)] transition-all duration-200';
+        headerInner.className = 'px-3 pt-2.5 pb-2 space-y-2';
+        mainInner.className = 'px-3 py-2.5 space-y-2.5';
+        mealTrayInner.className = 'max-w-[460px] mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-3 pt-2.5 pb-2 space-y-2 pointer-events-auto safe-bottom';
+        if (searchSortRow) searchSortRow.className = 'flex flex-col gap-2';
+        if (btnViewCard) btnViewCard.textContent = '1열';
+      } else {
+        appShell.className = 'min-h-screen bg-[var(--background)] transition-all duration-200';
+        headerInner.className = 'max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2.5 space-y-2.5';
+        mainInner.className = 'max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-3.5';
+        mealTrayInner.className = 'max-w-7xl mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-4 sm:px-6 pt-3 pb-2.5 space-y-2 pointer-events-auto safe-bottom';
+        if (searchSortRow) searchSortRow.className = 'flex flex-col sm:flex-row gap-2';
+        if (btnViewCard) btnViewCard.textContent = '카드';
+      }
+
+      render();
+      renderTray();
+    }
+
+    function toggleMobileBanner() {
+      state.mobileBannerOpen = !state.mobileBannerOpen;
+      renderCategoryTabs();
+    }
 
     function formatPrice(won) {
       return won.toLocaleString('ko-KR') + '원';
@@ -615,22 +751,43 @@
       modal.classList.remove('flex');
     }
 
+    let toastTimer = null;
+    function showToast(msg) {
+      const el = document.getElementById('toastMsg');
+      if (!el) return;
+      el.innerHTML = msg;
+      el.classList.remove('opacity-0', '-translate-y-2');
+      el.classList.add('opacity-100', 'translate-y-0');
+      if (toastTimer) clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        el.classList.remove('opacity-100', 'translate-y-0');
+        el.classList.add('opacity-0', '-translate-y-2');
+      }, 1600);
+    }
+
     function setCategory(cat) {
       state.category = cat;
       render();
+      setTimeout(() => {
+        const activeTab = document.getElementById('catTab_' + cat);
+        if (activeTab) {
+          activeTab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+        }
+      }, 20);
     }
 
     function setViewMode(mode) {
       state.viewMode = mode;
-      const btnCard = document.getElementById('btnViewCard');
-      const btnTable = document.getElementById('btnViewTable');
-      if (mode === 'card') {
-        btnCard.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition bg-[var(--primary)] text-[var(--primary-foreground)]';
-        btnTable.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
-      } else {
-        btnTable.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition bg-[var(--primary)] text-[var(--primary-foreground)]';
-        btnCard.className = 'px-3 py-1.5 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
-      }
+      const modes = { card: 'btnViewCard', compact: 'btnViewCompact', table: 'btnViewTable' };
+      Object.keys(modes).forEach(k => {
+        const btn = document.getElementById(modes[k]);
+        if (!btn) return;
+        if (k === mode) {
+          btn.className = 'px-2 py-1 rounded-md text-xs font-semibold transition bg-[var(--primary)] text-[var(--primary-foreground)]';
+        } else {
+          btn.className = 'px-2 py-1 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+        }
+      });
       render();
     }
 
@@ -638,9 +795,9 @@
       state.quickFilters[key] = !state.quickFilters[key];
       const btn = document.getElementById('qf_' + key);
       if (state.quickFilters[key]) {
-        btn.className = 'px-3 py-1 rounded-full text-xs font-semibold border border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] transition';
+        btn.className = 'px-2.5 py-1 rounded-full text-xs font-semibold border border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap shrink-0 transition';
       } else {
-        btn.className = 'px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition';
+        btn.className = 'px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition';
       }
       render();
     }
@@ -652,13 +809,19 @@
       Object.keys(state.quickFilters).forEach(k => {
         state.quickFilters[k] = false;
         const btn = document.getElementById('qf_' + k);
-        if (btn) btn.className = 'px-3 py-1 rounded-full text-xs font-medium border border-[var(--border)] transition';
+        if (btn) btn.className = 'px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition';
       });
       render();
     }
 
     state.orderType = '매장식사';
     state.orderNo = Math.floor(100 + Math.random() * 900);
+    state.trayDrawerOpen = false;
+
+    function toggleTrayDrawer() {
+      state.trayDrawerOpen = !state.trayDrawerOpen;
+      renderTray();
+    }
 
     function addToTray(id, event) {
       if (event) event.stopPropagation();
@@ -675,7 +838,9 @@
         groupKey: `${item.id}::${optionSummary}`,
         trayId: Date.now() + Math.random()
       });
+      showToast(`✅ <b>${item.boardName}</b> 담김! (${formatPrice(effectivePrice)})`);
       renderTray();
+      render();
     }
 
     function removeFromTray(trayId) {
@@ -1052,6 +1217,8 @@
 
     function renderTray() {
       const trayEl = document.getElementById('mealTray');
+      const drawerEl = document.getElementById('trayDrawer');
+      const btnToggleEl = document.getElementById('btnTrayToggle');
       const itemsEl = document.getElementById('trayItems');
       const totalsEl = document.getElementById('trayTotals');
       const headerCount = document.getElementById('headerReceiptCount');
@@ -1059,9 +1226,20 @@
 
       if (state.tray.length === 0) {
         trayEl.classList.add('translate-y-full');
+        state.trayDrawerOpen = false;
         return;
       }
       trayEl.classList.remove('translate-y-full');
+
+      if (drawerEl && btnToggleEl) {
+        if (state.trayDrawerOpen) {
+          drawerEl.classList.remove('hidden');
+          btnToggleEl.textContent = '닫기 ▼';
+        } else {
+          drawerEl.classList.add('hidden');
+          btnToggleEl.textContent = `목록(${state.tray.length}) ▲`;
+        }
+      }
 
       const grouped = getGroupedTray();
       itemsEl.innerHTML = grouped.map(item => {
@@ -1069,13 +1247,18 @@
         const catMeta = CATEGORY_META[item.category];
         const safeKey = item.groupKey.replace(/'/g, "\\'");
         return `
-          <div class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs font-medium shrink-0 border border-[var(--border)]">
-            ${imgSrc ? `<img src="${imgSrc}" alt="${item.boardName}" class="w-7 h-7 rounded object-cover bg-white shrink-0" />` : `<span>${catMeta.icon}</span>`}
-            <div>
-              <div class="font-semibold">${item.fullName} ${item.qty > 1 ? `<span class="px-1.5 py-0.2 rounded bg-black/15 font-bold">x${item.qty}</span>` : ''} <span class="text-[var(--primary)] font-bold">${formatPrice(item.effectivePrice * item.qty)}</span></div>
-              ${item.optionSummary ? `<div class="text-xs text-[var(--muted-foreground)]">${item.optionSummary}</div>` : ''}
+          <div class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs font-medium shrink-0 border border-[var(--border)]">
+            ${imgSrc ? `<img src="${imgSrc}" alt="${item.boardName}" class="w-8 h-8 rounded-lg object-cover bg-white shrink-0" />` : `<span class="text-base">${catMeta.icon}</span>`}
+            <div class="min-w-0">
+              <div class="font-bold truncate max-w-[140px]">${item.boardName}</div>
+              ${item.optionSummary ? `<div class="text-xs text-[var(--muted-foreground)] truncate max-w-[140px]">${item.optionSummary}</div>` : ''}
+              <div class="text-xs font-extrabold text-[var(--primary)]">${formatPrice(item.effectivePrice * item.qty)}</div>
             </div>
-            <button onclick="changeGroupQty('${safeKey}', -1)" class="hover:opacity-100 opacity-70 font-bold ml-1 px-1">✕</button>
+            <div class="inline-flex items-center border border-[var(--border)] rounded-lg bg-[var(--background)] ml-1">
+              <button onclick="changeGroupQty('${safeKey}', -1)" class="px-2 py-0.5 font-bold hover:bg-[var(--secondary)]">-</button>
+              <span class="px-1.5 font-extrabold">${item.qty}</span>
+              <button onclick="changeGroupQty('${safeKey}', 1)" class="px-2 py-0.5 font-bold hover:bg-[var(--secondary)]">+</button>
+            </div>
           </div>
         `;
       }).join('');
@@ -1094,15 +1277,29 @@
         return acc;
       }, { price: 0, kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, sodium: 0, nutriCount: 0 });
 
-      totalsEl.innerHTML = `
-        <span class="font-bold text-sm text-[var(--primary)]">총 ${state.tray.length}개 · ${formatPrice(total.price)}</span>
-        <span class="px-2 py-0.5 rounded bg-[var(--secondary)] font-semibold">${total.kcal} kcal</span>
-        <span>단백질 <b>${total.protein}g</b></span>
-        <span>탄수화물 <b>${total.carbs}g</b></span>
-        <span>당 <b>${total.sugar}g</b></span>
-        <span>지방 <b>${total.fat}g</b></span>
-        <span>나트륨 <b>${total.sodium}mg</b></span>
-      `;
+      if (state.deviceMode === 'mobile') {
+        totalsEl.innerHTML = `
+          <div class="flex items-center gap-1.5">
+            <span class="px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold">${state.tray.length}개</span>
+            <span class="font-black text-base text-[var(--foreground)]">${formatPrice(total.price)}</span>
+          </div>
+          <div class="text-xs text-[var(--muted-foreground)] truncate mt-0.5">
+            🔥 <b>${total.kcal}</b>kcal · 💪 단백질 <b class="text-emerald-500">${total.protein}g</b> · 탄 ${total.carbs}g · 지 ${total.fat}g
+          </div>
+        `;
+      } else {
+        totalsEl.innerHTML = `
+          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+            <span class="font-extrabold text-base text-[var(--primary)]">총 ${state.tray.length}개 · ${formatPrice(total.price)}</span>
+            <span class="px-2 py-0.5 rounded bg-[var(--secondary)] font-bold">🔥 ${total.kcal} kcal</span>
+            <span>💪 단백질 <b class="text-emerald-500">${total.protein}g</b></span>
+            <span>탄수화물 <b>${total.carbs}g</b></span>
+            <span>당류 <b>${total.sugar}g</b></span>
+            <span>지방 <b>${total.fat}g</b></span>
+            <span>나트륨 <b>${total.sodium}mg</b></span>
+          </div>
+        `;
+      }
     }
 
     function renderCategoryTabs() {
@@ -1111,22 +1308,28 @@
         return acc;
       }, { ALL: MENU_DATA.length });
 
+      const isMobile = state.deviceMode === 'mobile';
       const tabsEl = document.getElementById('categoryTabs');
+      tabsEl.className = isMobile
+        ? 'flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 -mx-1 px-1'
+        : 'flex flex-wrap items-center gap-1.5 pb-0.5';
+
       tabsEl.innerHTML = Object.keys(CATEGORY_META).map(key => {
         const active = state.category === key;
         const meta = CATEGORY_META[key];
         return `
           <button
+            id="catTab_${key}"
             onclick="setCategory('${key}')"
-            class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 border ${
+            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 border shrink-0 whitespace-nowrap ${
               active
-                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-sm'
+                ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-xs'
                 : 'bg-[var(--card)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--secondary)]'
             }"
           >
             <span>${meta.icon}</span>
             <span>${meta.name}</span>
-            <span class="text-xs px-1.5 py-0.5 rounded-full ${active ? 'bg-black/20 text-white' : 'bg-[var(--secondary)] text-[var(--muted-foreground)]'}">
+            <span class="text-xs px-1.5 py-0.2 rounded-full ${active ? 'bg-black/20 text-white' : 'bg-[var(--secondary)] text-[var(--muted-foreground)]'}">
               ${counts[key] || 0}
             </span>
           </button>
@@ -1138,37 +1341,82 @@
       const showWholeWheatToggle = ['ALL', 'SANDWICH', 'WRAP', 'POKE_WRAP'].includes(state.category);
       const hasCategorySauce = currentMeta.sauceOptions && currentMeta.sauceOptions.length > 0;
 
-      bannerEl.innerHTML = `
-        <div class="space-y-1">
-          <div class="font-semibold text-[var(--foreground)]">${currentMeta.optionsTitle}</div>
-          <div class="text-xs text-[var(--muted-foreground)]">${currentMeta.optionsDesc}</div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2 shrink-0">
-          ${showWholeWheatToggle ? `
-            <button
-              onclick="toggleGlobalWholeWheat()"
-              class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
-                state.globalWholeWheat
-                  ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]'
-                  : 'bg-[var(--background)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--secondary)]'
-              }"
-            >
-              🌾 통밀(+500원) 일괄 ${state.globalWholeWheat ? '적용중 ✓' : '적용하기'}
+      if (isMobile) {
+        bannerEl.className = 'bg-[var(--card)] border border-[var(--border)] rounded-xl p-2.5 text-xs space-y-2 shadow-xs';
+        bannerEl.innerHTML = `
+          <div class="flex items-center justify-between gap-2">
+            <div class="font-bold text-[var(--foreground)] truncate">${currentMeta.optionsTitle}</div>
+            <button onclick="toggleMobileBanner()" class="text-xs font-semibold text-[var(--primary)] shrink-0 px-2 py-0.5 rounded bg-[var(--secondary)]">
+              ${state.mobileBannerOpen ? '설명 닫기 ▲' : '일괄옵션/안내 ▼'}
             </button>
-          ` : ''}
-          ${hasCategorySauce ? `
-            <div class="inline-flex items-center gap-1.5 text-xs">
-              <span class="text-[var(--muted-foreground)] font-medium">${currentMeta.sauceLabel} 일괄변경:</span>
-              <select
-                onchange="applyCategorySauceAll('${state.category}', this.value)"
-                class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-medium focus:outline-none"
-              >
-                ${currentMeta.sauceOptions.map(s => `<option value="${s}">${s}</option>`).join('')}
-              </select>
+          </div>
+          ${state.mobileBannerOpen ? `
+            <div class="text-xs text-[var(--muted-foreground)] leading-relaxed pt-1 border-t border-[var(--border)]">
+              ${currentMeta.optionsDesc}
             </div>
           ` : ''}
-        </div>
-      `;
+          ${(showWholeWheatToggle || hasCategorySauce) ? `
+            <div class="flex flex-wrap items-center gap-1.5 pt-1">
+              ${showWholeWheatToggle ? `
+                <button
+                  onclick="toggleGlobalWholeWheat()"
+                  class="px-2.5 py-1 rounded-lg text-xs font-bold border transition ${
+                    state.globalWholeWheat
+                      ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]'
+                      : 'bg-[var(--background)] text-[var(--foreground)] border-[var(--border)]'
+                  }"
+                >
+                  🌾 통밀(+500) 일괄 ${state.globalWholeWheat ? 'ON ✓' : 'OFF'}
+                </button>
+              ` : ''}
+              ${hasCategorySauce ? `
+                <div class="inline-flex items-center gap-1 text-xs flex-1 min-w-[160px]">
+                  <span class="text-[var(--muted-foreground)] font-medium shrink-0">${currentMeta.sauceLabel}:</span>
+                  <select
+                    onchange="applyCategorySauceAll('${state.category}', this.value)"
+                    class="flex-1 px-2 py-1 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-semibold"
+                  >
+                    ${currentMeta.sauceOptions.map(s => `<option value="${s}">${s}</option>`).join('')}
+                  </select>
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+        `;
+      } else {
+        bannerEl.className = 'bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm';
+        bannerEl.innerHTML = `
+          <div class="space-y-1">
+            <div class="font-semibold text-[var(--foreground)]">${currentMeta.optionsTitle}</div>
+            <div class="text-xs text-[var(--muted-foreground)]">${currentMeta.optionsDesc}</div>
+          </div>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            ${showWholeWheatToggle ? `
+              <button
+                onclick="toggleGlobalWholeWheat()"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold border transition ${
+                  state.globalWholeWheat
+                    ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]'
+                    : 'bg-[var(--background)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--secondary)]'
+                }"
+              >
+                🌾 통밀(+500원) 일괄 ${state.globalWholeWheat ? '적용중 ✓' : '적용하기'}
+              </button>
+            ` : ''}
+            ${hasCategorySauce ? `
+              <div class="inline-flex items-center gap-1.5 text-xs">
+                <span class="text-[var(--muted-foreground)] font-medium">${currentMeta.sauceLabel} 일괄변경:</span>
+                <select
+                  onchange="applyCategorySauceAll('${state.category}', this.value)"
+                  class="px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-medium focus:outline-none"
+                >
+                  ${currentMeta.sauceOptions.map(s => `<option value="${s}">${s}</option>`).join('')}
+                </select>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }
     }
 
     function getFilteredData() {
@@ -1194,7 +1442,6 @@
         if (sort === 'price_desc') return priceB - priceA;
         if (sort === 'default') return 0;
 
-        // Put items without nutrition at the bottom when sorting by nutrition metrics
         if (a.hasNutrition !== b.hasNutrition) return a.hasNutrition ? -1 : 1;
         if (!a.hasNutrition && !b.hasNutrition) return priceA - priceB;
 
@@ -1213,24 +1460,60 @@
       return list;
     }
 
-    function renderOptionControls(item) {
+    function getItemTrayQty(id) {
+      return state.tray.filter(t => t.id === id).length;
+    }
+
+    function renderOptionControls(item, compact = false) {
       const meta = CATEGORY_META[item.category];
       if (!meta || (!meta.breadOptions && !meta.sauceOptions)) return '';
       if (item.fixedOption) {
         return `
-          <div class="mt-2.5 pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+          <div class="mt-2 pt-2 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
             <span>🔒 온리 메뉴: <b>우유식빵 · 기본 소스</b> 고정</span>
           </div>
         `;
       }
 
       const sel = itemSelections[item.id] || { breadIdx: 0, sauce: '' };
+      if (compact) {
+        return `
+          <div class="mt-1.5 pt-1.5 border-t border-[var(--border)] space-y-1" onclick="event.stopPropagation()">
+            ${meta.breadOptions ? `
+              <div class="grid grid-cols-2 gap-1">
+                ${meta.breadOptions.map((opt, idx) => `
+                  <button
+                    type="button"
+                    onclick="setItemBread(event, '${item.id}', ${idx})"
+                    class="px-1.5 py-1 rounded text-xs font-semibold border transition truncate ${
+                      sel.breadIdx === idx
+                        ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]'
+                        : 'bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)]'
+                    }"
+                  >
+                    ${opt.label.replace(' (+500)', '+500')}
+                  </button>
+                `).join('')}
+              </div>
+            ` : ''}
+            ${meta.sauceOptions ? `
+              <select
+                onchange="setItemSauce(event, '${item.id}', this.value)"
+                class="w-full px-2 py-1 rounded border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-semibold"
+              >
+                ${meta.sauceOptions.map(s => `<option value="${s}" ${sel.sauce === s ? 'selected' : ''}>${s}</option>`).join('')}
+              </select>
+            ` : ''}
+          </div>
+        `;
+      }
+
       return `
         <div class="mt-2.5 pt-2.5 border-t border-[var(--border)] space-y-2" onclick="event.stopPropagation()">
           ${meta.breadOptions ? `
             <div class="flex items-center justify-between gap-2">
               <span class="text-xs font-medium text-[var(--muted-foreground)] shrink-0">${meta.breadLabel}:</span>
-              <div class="grid grid-cols-2 gap-1 flex-1 max-w-[220px]">
+              <div class="grid grid-cols-2 gap-1 flex-1 max-w-[230px]">
                 ${meta.breadOptions.map((opt, idx) => `
                   <button
                     type="button"
@@ -1251,7 +1534,7 @@
             <div class="flex items-center justify-between gap-2">
               <span class="text-xs font-medium text-[var(--muted-foreground)] shrink-0">${meta.sauceLabel}:</span>
               ${meta.sauceOptions.length <= 2 ? `
-                <div class="grid grid-cols-2 gap-1 flex-1 max-w-[220px]">
+                <div class="grid grid-cols-2 gap-1 flex-1 max-w-[230px]">
                   ${meta.sauceOptions.map(s => `
                     <button
                       type="button"
@@ -1269,7 +1552,7 @@
               ` : `
                 <select
                   onchange="setItemSauce(event, '${item.id}', this.value)"
-                  class="flex-1 max-w-[220px] px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                  class="flex-1 max-w-[230px] px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 >
                   ${meta.sauceOptions.map(s => `<option value="${s}" ${sel.sauce === s ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
@@ -1283,22 +1566,197 @@
     function render() {
       renderCategoryTabs();
       const list = getFilteredData();
-      document.getElementById('resultCount').textContent = `총 ${list.length}개 메뉴`;
+      document.getElementById('resultCount').textContent = `${list.length}개`;
 
       const container = document.getElementById('menuContainer');
       if (list.length === 0) {
         container.innerHTML = `
-          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-12 text-center space-y-2">
-            <div class="text-lg font-semibold">조건에 맞는 메뉴가 없습니다</div>
-            <p class="text-sm text-[var(--muted-foreground)]">검색어나 빠른 필터 조건을 해제해보세요.</p>
+          <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-10 text-center space-y-2">
+            <div class="text-base font-bold">조건에 맞는 메뉴가 없습니다</div>
+            <p class="text-xs text-[var(--muted-foreground)]">검색어나 빠른 필터 조건을 해제해보세요.</p>
           </div>
         `;
         return;
       }
 
-      if (state.viewMode === 'card') {
+      const isMobile = state.deviceMode === 'mobile';
+
+      // 1) MOBILE VERSION RENDERING
+      if (isMobile) {
+        if (state.viewMode === 'card') {
+          // Mobile 1-Column Delivery App Style List
+          container.innerHTML = `
+            <div class="space-y-2.5">
+              ${list.map(item => {
+                const catMeta = CATEGORY_META[item.category];
+                const effPrice = getItemEffectivePrice(item);
+                const extraAdded = effPrice > item.price;
+                const imgSrc = getImg(item.id);
+                const qty = getItemTrayQty(item.id);
+
+                return `
+                  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 shadow-xs space-y-2">
+                    <div class="flex items-start gap-3">
+                      <!-- Photo -->
+                      <div class="relative shrink-0" onclick="openImageModal(event, '${item.id}')">
+                        ${imgSrc ? `
+                          <img src="${imgSrc}" alt="${item.fullName}" loading="lazy" class="w-20 h-20 rounded-xl object-cover border border-[var(--border)] bg-white" />
+                          <span class="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">🔍</span>
+                        ` : `
+                          <div class="w-20 h-20 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center text-center p-1">
+                            <span class="text-2xl">${catMeta.icon}</span>
+                            <span class="text-xs text-[var(--muted-foreground)]">사진없음</span>
+                          </div>
+                        `}
+                      </div>
+
+                      <!-- Info & Add Button -->
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-start justify-between gap-1.5">
+                          <div class="min-w-0">
+                            <span class="inline-block text-xs font-semibold px-1.5 py-0.2 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">
+                              ${catMeta.icon} ${catMeta.name}${item.hasNutrition ? ` · ${item.weight}g` : ''}
+                            </span>
+                            <h3 class="font-extrabold text-sm text-[var(--foreground)] truncate mt-0.5">${item.boardName}</h3>
+                          </div>
+                          <button
+                            onclick="addToTray('${item.id}', event)"
+                            class="px-3 py-1.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold shadow-xs active:scale-95 transition shrink-0 flex items-center gap-1"
+                          >
+                            <span>+ 담기</span>
+                            ${qty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${qty}</span>` : ''}
+                          </button>
+                        </div>
+
+                        <div class="flex items-baseline gap-2 mt-1">
+                          <span class="text-base font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
+                          ${extraAdded ? `<span class="text-xs text-amber-500 font-bold">(+500)</span>` : ''}
+                          ${item.hasNutrition ? `<span class="text-xs font-bold text-[var(--muted-foreground)]">· ${item.kcal} kcal</span>` : ''}
+                        </div>
+
+                        ${item.hasNutrition ? `
+                          <div class="flex flex-wrap items-center gap-1 mt-1.5 text-xs">
+                            <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-extrabold">단백질 ${item.protein}g</span>
+                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] font-semibold">탄 ${item.carbs}g</span>
+                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] font-semibold">당 ${item.sugar}g</span>
+                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] font-semibold">지 ${item.fat}g</span>
+                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--muted-foreground)]">나트륨 ${item.sodium}</span>
+                          </div>
+                        ` : `
+                          <div class="text-xs text-[var(--muted-foreground)] mt-1">📋 메뉴판 정식 메뉴 (영양표 미제공)</div>
+                        `}
+                      </div>
+                    </div>
+
+                    ${renderOptionControls(item, false)}
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else if (state.viewMode === 'compact') {
+          // Mobile 2-Column Photo Grid View
+          container.innerHTML = `
+            <div class="grid grid-cols-2 gap-2.5">
+              ${list.map(item => {
+                const catMeta = CATEGORY_META[item.category];
+                const effPrice = getItemEffectivePrice(item);
+                const imgSrc = getImg(item.id);
+                const qty = getItemTrayQty(item.id);
+
+                return `
+                  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-2.5 flex flex-col justify-between shadow-xs">
+                    <div>
+                      <div class="relative mb-2" onclick="openImageModal(event, '${item.id}')">
+                        ${imgSrc ? `
+                          <img src="${imgSrc}" alt="${item.fullName}" loading="lazy" class="w-full h-28 rounded-xl object-cover border border-[var(--border)] bg-white" />
+                        ` : `
+                          <div class="w-full h-28 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center">
+                            <span class="text-3xl">${catMeta.icon}</span>
+                            <span class="text-xs text-[var(--muted-foreground)] mt-1">사진없음</span>
+                          </div>
+                        `}
+                        <span class="absolute top-1.5 left-1.5 bg-black/65 text-white text-xs px-1.5 py-0.5 rounded-md font-semibold">
+                          ${catMeta.icon} ${catMeta.name}
+                        </span>
+                        ${item.hasNutrition ? `
+                          <span class="absolute bottom-1.5 right-1.5 bg-emerald-600/95 text-white text-xs px-1.5 py-0.5 rounded-md font-extrabold">
+                            💪 ${item.protein}g
+                          </span>
+                        ` : ''}
+                      </div>
+
+                      <h3 class="font-extrabold text-xs text-[var(--foreground)] truncate">${item.boardName}</h3>
+                      <div class="flex items-baseline justify-between mt-0.5">
+                        <span class="text-sm font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
+                        <span class="text-xs text-[var(--muted-foreground)]">${item.hasNutrition ? `${item.kcal}kcal` : '성분미제공'}</span>
+                      </div>
+                      ${renderOptionControls(item, true)}
+                    </div>
+
+                    <button
+                      onclick="addToTray('${item.id}', event)"
+                      class="mt-2 w-full py-1.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold active:scale-95 transition flex items-center justify-center gap-1"
+                    >
+                      <span>+ 식단 담기</span>
+                      ${qty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${qty}</span>` : ''}
+                    </button>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          `;
+        } else {
+          // Mobile Compact Table View
+          container.innerHTML = `
+            <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-xs">
+              <div class="overflow-x-auto custom-scroll">
+                <table class="w-full text-xs text-left">
+                  <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] border-b border-[var(--border)]">
+                    <tr>
+                      <th class="py-2.5 px-2.5">메뉴명</th>
+                      <th class="py-2.5 px-2 text-right">가격</th>
+                      <th class="py-2.5 px-2 text-right">열량</th>
+                      <th class="py-2.5 px-2 text-right">단백질</th>
+                      <th class="py-2.5 px-2 text-center">담기</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-[var(--border)]">
+                    ${list.map(item => {
+                      const effPrice = getItemEffectivePrice(item);
+                      const optSummary = getItemOptionSummary(item);
+                      return `
+                        <tr onclick="addToTray('${item.id}', event)" class="hover:bg-[var(--secondary)] cursor-pointer">
+                          <td class="py-2 px-2.5">
+                            <div class="font-bold text-[var(--foreground)]">${item.boardName}</div>
+                            ${optSummary ? `<div class="text-xs text-[var(--muted-foreground)]">${optSummary}</div>` : ''}
+                          </td>
+                          <td class="py-2 px-2 text-right font-bold text-[var(--primary)] whitespace-nowrap">${formatPrice(effPrice)}</td>
+                          <td class="py-2 px-2 text-right">${item.hasNutrition ? `${item.kcal}` : '-'}</td>
+                          <td class="py-2 px-2 text-right font-extrabold text-emerald-500">${item.hasNutrition ? `${item.protein}g` : '-'}</td>
+                          <td class="py-2 px-2 text-center">
+                            <span class="px-2 py-1 rounded bg-[var(--primary)] text-[var(--primary-foreground)] font-bold">+</span>
+                          </td>
+                        </tr>
+                      `;
+                    }).join('')}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          `;
+        }
+        return;
+      }
+
+      // 2) PC VERSION RENDERING
+      if (state.viewMode === 'card' || state.viewMode === 'compact') {
+        const gridCols = state.viewMode === 'compact'
+          ? 'grid-cols-1 md:grid-cols-2 gap-3.5'
+          : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
+
         container.innerHTML = `
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div class="grid ${gridCols}">
             ${list.map(item => {
               const catMeta = CATEGORY_META[item.category];
               const effPrice = getItemEffectivePrice(item);
@@ -1306,6 +1764,7 @@
               const imgSrc = getImg(item.id);
               const protPer1k = item.hasNutrition ? (item.protein / (effPrice / 1000)).toFixed(1) : null;
               const protPer100kcal = item.hasNutrition ? ((item.protein / item.kcal) * 100).toFixed(1) : null;
+              const qty = getItemTrayQty(item.id);
 
               return `
                 <div
@@ -1335,6 +1794,12 @@
                           <span class="inline-block text-xs font-medium px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] mb-1">
                             ${catMeta.icon} ${catMeta.name}${item.hasNutrition ? ` · ${item.weight}g` : ''}
                           </span>
+                          <button
+                            onclick="addToTray('${item.id}', event)"
+                            class="px-2.5 py-1 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold shadow-xs hover:opacity-90 transition shrink-0"
+                          >
+                            + 담기${qty > 0 ? ` (${qty})` : ''}
+                          </button>
                         </div>
                         <h3 class="font-bold text-base text-[var(--foreground)] group-hover:text-[var(--primary)] transition truncate">
                           ${item.boardName}
@@ -1354,7 +1819,7 @@
                     </div>
 
                     ${item.note && !item.fixedOption ? `<div class="mt-2 text-xs px-2 py-1 rounded bg-[var(--secondary)] text-[var(--muted-foreground)]">📌 ${item.note}</div>` : ''}
-                    ${renderOptionControls(item)}
+                    ${renderOptionControls(item, false)}
                   </div>
 
                   <!-- Nutrition or Add Button Footer -->
@@ -1460,7 +1925,7 @@
       }
     }
 
-    render();
+    setDeviceMode(state.deviceMode);
   </script>
 </body>
 </html>
