@@ -150,6 +150,16 @@
               </button>
             </div>
 
+            <!-- Monthly Order History Button -->
+            <button
+              onclick="openMonthlyModal()"
+              class="px-2.5 py-1.5 rounded-lg border-2 border-[var(--primary)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--secondary)] text-xs font-extrabold shadow-sm active:scale-95 transition flex items-center gap-1"
+              title="월별 최종 주문 명단 및 금액 정산 내역"
+            >
+              <span>📅 월별주문내역</span>
+              <span id="headerMonthlyCount" class="px-1.5 py-0.2 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs">0</span>
+            </button>
+
             <!-- Receipt Quick Button -->
             <button
               onclick="openReceiptModal()"
@@ -256,7 +266,7 @@
       <!-- Expandable Tray Items Drawer -->
       <div id="trayDrawer" class="hidden border-b border-[var(--border)] pb-2">
         <div class="flex items-center justify-between mb-1.5">
-          <span class="text-xs font-bold text-[var(--muted-foreground)]">실시간 장바구니 담긴 메뉴 (주문자 표시 · -/+ 수량 조절)</span>
+          <span class="text-xs font-bold text-[var(--muted-foreground)]">실시간 장바구니 담긴 메뉴 (주문자 표시 · 신중한 삭제/수정 및 로그 기록)</span>
           <div class="flex items-center gap-2">
             <button onclick="clearMyTray()" class="text-xs text-amber-500 font-semibold hover:underline">내 주문만 비우기</button>
             <button onclick="clearTray()" class="text-xs text-rose-500 font-semibold hover:underline">전체 초기화</button>
@@ -274,7 +284,10 @@
           <button onclick="toggleTrayDrawer()" id="btnTrayToggle" class="px-2.5 py-2 rounded-xl border border-[var(--border)] text-xs font-semibold hover:bg-[var(--secondary)]">
             목록 ▲
           </button>
-          <button onclick="openReceiptModal()" class="px-4 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
+          <button onclick="finalizeTodayOrderPrompt()" class="px-3 py-2 rounded-xl bg-amber-500 text-white text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
+            <span>✅ 최종주문확정</span>
+          </button>
+          <button onclick="openReceiptModal()" class="px-3.5 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
             <span>🧾 단체영수증</span>
           </button>
         </div>
@@ -305,6 +318,61 @@
           확인 후 메뉴 담기
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Careful Delete / Modify Confirmation Modal (< 정말 삭제하시겠습니까? >) -->
+  <div id="confirmActionModal" onclick="closeConfirmActionModal()" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div onclick="event.stopPropagation()" class="bg-[var(--card)] border-2 border-rose-500 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-[var(--border)] pb-2.5">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚠️</span>
+          <h3 id="confirmModalTitle" class="text-base font-black text-rose-500">&lt; 정말 삭제하시겠습니까? &gt;</h3>
+        </div>
+        <button onclick="closeConfirmActionModal()" class="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] font-bold">✕ 닫기</button>
+      </div>
+
+      <div id="confirmModalDesc" class="bg-[var(--secondary)]/80 border border-[var(--border)] rounded-xl p-3 text-xs space-y-1.5 text-[var(--foreground)]">
+      </div>
+
+      <div class="space-y-1.5">
+        <label for="confirmActorInput" class="block text-xs font-extrabold text-[var(--foreground)]">
+          ✍️ 삭제/수정하는 사람 이름 <span class="text-rose-500">(실시간 로그에 기록됩니다)</span>
+        </label>
+        <input
+          id="confirmActorInput"
+          type="text"
+          placeholder="본인 이름 입력 (예: 홍길동)"
+          onkeydown="if(event.key==='Enter') executeConfirmedAction()"
+          class="w-full px-3 py-2 rounded-xl border-2 border-rose-500/80 bg-[var(--background)] text-[var(--foreground)] text-xs sm:text-sm font-bold focus:outline-none"
+        />
+        <p class="text-xs text-[var(--muted-foreground)]">
+          ※ 실수로 타인의 주문을 삭제/수정하는 것을 방지하기 위해 삭제·수정한 사람의 명단이 전체 화면 로그에 남습니다.
+        </p>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-1">
+        <button
+          onclick="closeConfirmActionModal()"
+          class="px-4 py-2 rounded-xl border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-xs font-bold transition"
+        >
+          취소 (유지하기)
+        </button>
+        <button
+          id="confirmModalSubmitBtn"
+          onclick="executeConfirmedAction()"
+          class="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md transition"
+        >
+          네, 삭제/수정합니다
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Monthly Order History Modal (월별 최종 주문내역 & 인원별 명단/금액 정산창) -->
+  <div id="monthlyHistoryModal" onclick="closeMonthlyModal()" class="fixed inset-0 bg-black/70 backdrop-blur-xs z-50 hidden items-end sm:items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div onclick="event.stopPropagation()" class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-4 sm:p-6 max-w-4xl w-full shadow-2xl max-h-[92vh] overflow-y-auto space-y-4 my-auto">
+      <div id="monthlyModalContent"></div>
     </div>
   </div>
 
@@ -613,13 +681,32 @@
       };
     }
 
+    function loadMonthlyOrdersFromLocal() {
+      try {
+        const raw = localStorage.getItem('salaria_monthly_orders_v1');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch (e) {}
+      return {};
+    }
+
+    function saveMonthlyOrdersToLocal(mapObj) {
+      try {
+        localStorage.setItem('salaria_monthly_orders_v1', JSON.stringify(mapObj));
+      } catch (e) {}
+    }
+
     let state = {
       deviceMode: window.innerWidth < 768 ? 'mobile' : 'pc',
       todayKey: getKSTDateKey(),
+      selectedMonthKey: getKSTDateKey().slice(0, 7), // 'YYYY-MM'
       userName: (localStorage.getItem('salaria_user_name') || '').trim(),
       pendingMenuId: null,
+      pendingConfirmAction: null,
       overrideDeadline: false,
-      boardTab: 'byPerson', // 'byPerson' | 'byMenu'
+      boardTab: 'byPerson', // 'byPerson' | 'byMenu' | 'auditLog'
       boardExpanded: true,
       receiptScope: 'all', // 'all' | 'mine'
       syncStatus: 'connecting', // 'connecting' | 'live' | 'local'
@@ -635,7 +722,10 @@
         under10k: false,
         lowSodium: false
       },
-      tray: []
+      tray: [],
+      auditLogs: [],
+      deleterNames: [],
+      monthlyOrders: loadMonthlyOrdersFromLocal()
     };
 
     // =========================================================================
@@ -653,6 +743,7 @@
     }
 
     const appliedEventIds = new Set();
+    const appliedMonthlyIds = new Set();
     let eventLog = [];
     let sseSource = null;
     const bcChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('salaria_realtime_v1') : null;
@@ -663,6 +754,24 @@
 
     function getCloudTopic(dateKey) {
       return `salaria_gonghangh_kr_${dateKey.replace(/-/g, '')}`;
+    }
+
+    function getMonthlyCloudTopic() {
+      return `salaria_gonghangh_kr_monthly_v1`;
+    }
+
+    function formatEventTimeKST(ts) {
+      try {
+        const d = new Date(ts || Date.now());
+        const utc = d.getTime() + d.getTimezoneOffset() * 60000;
+        const kst = new Date(utc + 9 * 3600000);
+        const hh = String(kst.getHours()).padStart(2, '0');
+        const mm = String(kst.getMinutes()).padStart(2, '0');
+        const ss = String(kst.getSeconds()).padStart(2, '0');
+        return `${hh}:${mm}:${ss}`;
+      } catch (e) {
+        return '';
+      }
     }
 
     function cleanOldDateStorage(currentDateKey) {
@@ -680,11 +789,14 @@
 
     function rebuildTrayFromEvents() {
       const items = [];
+      const logs = [];
       const sorted = [...eventLog].sort((a, b) => (a.ts || 0) - (b.ts || 0));
 
       sorted.forEach(ev => {
         if (!ev || ev.dateKey !== state.todayKey) return;
         const p = ev.payload || {};
+        const timeStr = formatEventTimeKST(ev.ts);
+
         if (ev.type === 'ADD') {
           const menu = MENU_DATA.find(m => m.id === p.itemId);
           if (!menu) return;
@@ -704,19 +816,36 @@
         } else if (ev.type === 'DELTA_GROUP') {
           const targetKey = p.groupKey;
           const delta = p.delta;
+          const actorName = (p.actorName || p.sample?.userName || '익명').trim();
+          const targetUserName = (p.targetUserName || p.sample?.userName || '익명').trim();
+          const menuObj = MENU_DATA.find(m => m.id === p.sample?.itemId);
+          const menuName = p.menuName || (menuObj ? menuObj.boardName : '메뉴');
+          const optStr = p.sample?.optionSummary ? ` (${p.sample.optionSummary})` : '';
+          const unitPrice = p.sample?.effectivePrice || (menuObj ? menuObj.price : 0);
+
           if (delta > 0 && p.sample) {
-            const menu = MENU_DATA.find(m => m.id === p.sample.itemId);
-            if (menu) {
+            if (menuObj) {
               items.push({
-                ...menu,
+                ...menuObj,
                 userName: p.sample.userName,
                 effectivePrice: p.sample.effectivePrice,
-                extraPrice: p.sample.effectivePrice - menu.price,
+                extraPrice: p.sample.effectivePrice - menuObj.price,
                 optionSummary: p.sample.optionSummary || '',
                 groupKey: targetKey,
                 trayId: ev.eid
               });
             }
+            logs.push({
+              eid: ev.eid,
+              timeStr,
+              isDelete: false,
+              actionType: 'MODIFY_ADD',
+              actionLabel: '✏️ 수량 추가 (+1)',
+              actorName,
+              targetUserName,
+              detail: `${menuName}${optStr}`,
+              amountStr: `+${formatPrice(unitPrice)}`
+            });
           } else if (delta < 0) {
             for (let i = items.length - 1; i >= 0; i--) {
               if (items[i].groupKey === targetKey) {
@@ -724,20 +853,92 @@
                 break;
               }
             }
+            logs.push({
+              eid: ev.eid,
+              timeStr,
+              isDelete: true,
+              actionType: 'DELETE_ONE',
+              actionLabel: '🗑️ 메뉴 삭제/차감 (-1)',
+              actorName,
+              targetUserName,
+              detail: `${menuName}${optStr}`,
+              amountStr: `-${formatPrice(unitPrice)}`
+            });
           }
         } else if (ev.type === 'CLEAR_USER') {
           const targetUser = (p.userName || '').trim();
+          const actorName = (p.actorName || targetUser || '익명').trim();
+          let removedCount = 0;
+          let removedAmount = 0;
+          const removedNames = [];
           for (let i = items.length - 1; i >= 0; i--) {
             if (items[i].userName === targetUser) {
+              removedCount++;
+              removedAmount += items[i].effectivePrice;
+              removedNames.push(items[i].boardName);
               items.splice(i, 1);
             }
           }
+          logs.push({
+            eid: ev.eid,
+            timeStr,
+            isDelete: true,
+            actionType: 'CLEAR_USER',
+            actionLabel: '🗑️ 주문자 전체 삭제',
+            actorName,
+            targetUserName: targetUser,
+            detail: p.deletedSummary || (removedNames.length > 0 ? `${removedNames.join(', ')} (${removedCount}개)` : '주문자 메뉴 전체'),
+            amountStr: `-${formatPrice(p.deletedAmount || removedAmount)}`
+          });
         } else if (ev.type === 'CLEAR_ALL') {
+          const actorName = (p.actorName || '익명').trim();
+          const prevCount = items.length;
+          const prevAmount = items.reduce((s, x) => s + x.effectivePrice, 0);
           items.length = 0;
+          logs.push({
+            eid: ev.eid,
+            timeStr,
+            isDelete: true,
+            actionType: 'CLEAR_ALL',
+            actionLabel: '🚨 장바구니 전체 초기화',
+            actorName,
+            targetUserName: '전체 주문자',
+            detail: p.deletedSummary || `전체 메뉴 ${prevCount}개 일괄 삭제`,
+            amountStr: `-${formatPrice(p.deletedAmount || prevAmount)}`
+          });
+        } else if (ev.type === 'FINALIZE_ORDER') {
+          if (p.record && p.record.dateKey) {
+            state.monthlyOrders[p.record.dateKey] = p.record;
+            saveMonthlyOrdersToLocal(state.monthlyOrders);
+          }
+          logs.push({
+            eid: ev.eid,
+            timeStr,
+            isDelete: false,
+            actionType: 'FINALIZE_ORDER',
+            actionLabel: '✅ 최종 주문 확정',
+            actorName: p.actorName || p.record?.finalizedBy || '익명',
+            targetUserName: `참여 ${p.record?.personCount || 0}명`,
+            detail: `총 ${p.record?.totalQty || 0}개 최종 주문 기록됨`,
+            amountStr: formatPrice(p.record?.totalAmount || 0)
+          });
         }
       });
 
       state.tray = items;
+      state.auditLogs = logs.reverse(); // Newest first
+
+      // Build summary of people who deleted/modified orders today
+      const deleterMap = new Map();
+      state.auditLogs.forEach(l => {
+        if (l.actionType !== 'FINALIZE_ORDER') {
+          const cur = deleterMap.get(l.actorName) || { actorName: l.actorName, deleteCount: 0, modifyCount: 0 };
+          if (l.isDelete) cur.deleteCount += 1;
+          else cur.modifyCount += 1;
+          deleterMap.set(l.actorName, cur);
+        }
+      });
+      state.deleterNames = Array.from(deleterMap.values());
     }
 
     function saveEventsToLocal() {
@@ -757,6 +958,62 @@
         refreshAllUI();
       }
       return true;
+    }
+
+    function ingestMonthlyEvent(ev, fromRemote = false) {
+      if (!ev || !ev.eid || appliedMonthlyIds.has(ev.eid)) return false;
+      appliedMonthlyIds.add(ev.eid);
+      if (ev.type === 'MONTHLY_UPSERT' && ev.record && ev.record.dateKey) {
+        state.monthlyOrders[ev.record.dateKey] = ev.record;
+        saveMonthlyOrdersToLocal(state.monthlyOrders);
+        if (fromRemote) refreshAllUI();
+        return true;
+      } else if (ev.type === 'MONTHLY_DELETE' && ev.dateKey) {
+        delete state.monthlyOrders[ev.dateKey];
+        saveMonthlyOrdersToLocal(state.monthlyOrders);
+        if (fromRemote) refreshAllUI();
+        return true;
+      }
+      return false;
+    }
+
+    async function dispatchMonthlyCloudEvent(type, data) {
+      const ev = {
+        eid: `m_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        ts: Date.now(),
+        type,
+        ...data
+      };
+      ingestMonthlyEvent(ev, true);
+      if (bcChannel) {
+        try { bcChannel.postMessage({ __monthly: true, ev }); } catch (e) {}
+      }
+      try {
+        await fetch(`https://ntfy.sh/${getMonthlyCloudTopic()}`, {
+          method: 'POST',
+          body: JSON.stringify(ev)
+        });
+      } catch (e) {}
+    }
+
+    async function fetchMonthlyCloudHistory() {
+      try {
+        const res = await fetch(`https://ntfy.sh/${getMonthlyCloudTopic()}/json?poll=1&since=all`);
+        if (!res.ok) return;
+        const text = await res.text();
+        let changed = false;
+        text.split('\n').forEach(line => {
+          if (!line.trim()) return;
+          try {
+            const wrapper = JSON.parse(line);
+            if (wrapper && wrapper.event === 'message' && wrapper.message) {
+              const ev = JSON.parse(wrapper.message);
+              if (ingestMonthlyEvent(ev, false)) changed = true;
+            }
+          } catch (err) {}
+        });
+        if (changed) refreshAllUI();
+      } catch (e) {}
     }
 
     async function dispatchOrderEvent(type, payload) {
@@ -847,6 +1104,7 @@
 
       // 2. Fetch cloud history & open SSE live stream
       fetchCloudEventHistory();
+      fetchMonthlyCloudHistory();
 
       if (typeof EventSource !== 'undefined') {
         try {
@@ -864,6 +1122,10 @@
                 if (ev.type === 'ADD' && ev.payload && ev.payload.userName !== state.userName) {
                   const m = MENU_DATA.find(x => x.id === ev.payload.itemId);
                   if (m) showToast(`🔔 <b>${ev.payload.userName}</b>님이 <b>${m.boardName}</b> 메뉴를 담았습니다!`);
+                } else if (ev.type === 'DELTA_GROUP' && ev.payload && ev.payload.delta < 0) {
+                  showToast(`🗑️ <b>${ev.payload.actorName || '익명'}</b>님이 <b>${ev.payload.targetUserName || ''}</b>님의 메뉴를 삭제(-1)했습니다.`);
+                } else if (ev.type === 'CLEAR_USER' && ev.payload) {
+                  showToast(`🗑️ <b>${ev.payload.actorName || '익명'}</b>님이 <b>${ev.payload.userName}</b>님의 주문을 전체 삭제했습니다.`);
                 }
               }
             } catch (err) {}
@@ -877,7 +1139,12 @@
 
     if (bcChannel) {
       bcChannel.onmessage = (e) => {
-        if (e && e.data) ingestEvent(e.data, true);
+        if (!e || !e.data) return;
+        if (e.data.__monthly && e.data.ev) {
+          ingestMonthlyEvent(e.data.ev, true);
+        } else {
+          ingestEvent(e.data, true);
+        }
       };
     }
 
@@ -893,6 +1160,11 @@
           }
           if (changed) refreshAllUI();
         } catch (err) {}
+      } else if (e.key === 'salaria_monthly_orders_v1' && e.newValue) {
+        try {
+          state.monthlyOrders = JSON.parse(e.newValue) || {};
+          refreshAllUI();
+        } catch (err) {}
       } else if (e.key === 'salaria_user_name') {
         state.userName = (e.newValue || '').trim();
         notifyStore();
@@ -905,7 +1177,10 @@
       const curDateKey = getKSTDateKey();
       if (curDateKey !== state.todayKey) {
         state.todayKey = curDateKey;
+        state.selectedMonthKey = curDateKey.slice(0, 7);
         state.tray = [];
+        state.auditLogs = [];
+        state.deleterNames = [];
         connectRealtimeStream();
         showToast(`🌅 자정(00:00)이 지나 오늘(${curDateKey}) 주문판으로 자동 초기화되었습니다!`);
         return;
@@ -1296,6 +1571,84 @@
       showToast(`✅ <b>[${state.userName}]</b> ${item.boardName} 담김! (${formatPrice(effectivePrice)})`);
     }
 
+    // =========================================================================
+    // Careful Confirmation Modal (< 정말 삭제하시겠습니까? >) & Audit Log Actions
+    // =========================================================================
+    function openConfirmActionModal(config) {
+      state.pendingConfirmAction = config;
+      const modal = document.getElementById('confirmActionModal');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const descEl = document.getElementById('confirmModalDesc');
+      const actorInput = document.getElementById('confirmActorInput');
+      const submitBtn = document.getElementById('confirmModalSubmitBtn');
+
+      if (titleEl) {
+        titleEl.innerHTML = config.title || '&lt; 정말 삭제하시겠습니까? &gt;';
+        titleEl.className = config.isPositive
+          ? 'text-base font-black text-emerald-500'
+          : 'text-base font-black text-rose-500';
+      }
+      if (descEl) {
+        descEl.innerHTML = config.descHTML || '';
+      }
+      if (actorInput) {
+        actorInput.value = state.userName || '';
+      }
+      if (submitBtn) {
+        submitBtn.textContent = config.submitLabel || '네, 삭제합니다';
+        submitBtn.className = config.isPositive
+          ? 'px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold shadow-md transition'
+          : 'px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-extrabold shadow-md transition';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => {
+        if (actorInput && !actorInput.value) actorInput.focus();
+      }, 50);
+    }
+
+    function closeConfirmActionModal() {
+      state.pendingConfirmAction = null;
+      const modal = document.getElementById('confirmActionModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function executeConfirmedAction() {
+      const cfg = state.pendingConfirmAction;
+      if (!cfg) return;
+
+      const actorInput = document.getElementById('confirmActorInput');
+      const actorName = (actorInput ? actorInput.value : state.userName || '').trim();
+      if (!actorName) {
+        showToast('⚠️ 삭제/수정(또는 확정)하는 사람의 이름을 반드시 입력해주세요! (로그에 기록됩니다)');
+        if (actorInput) actorInput.focus();
+        return;
+      }
+
+      // Save actor name if user didn't have one set yet
+      if (!state.userName) {
+        setUserName(actorName);
+      }
+
+      // Trigger native JS confirm dialog (< 정말 삭제하시겠습니까? >) for extra safety
+      const confirmScriptText = cfg.confirmScriptText || `< 정말 삭제하시겠습니까? >\n\n• 실행자(로그 기록): ${actorName}\n• 내용: ${cfg.plainSummary || '선택한 주문 삭제/수정'}`;
+      try {
+        const ok = window.confirm(confirmScriptText);
+        if (ok === false) {
+          return;
+        }
+      } catch (e) {}
+
+      closeConfirmActionModal();
+      if (typeof cfg.onConfirm === 'function') {
+        cfg.onConfirm(actorName);
+      }
+    }
+
     function changeGroupQty(groupKey, delta) {
       const dl = getDeadlineInfo();
       if (!dl.canOrder) {
@@ -1303,16 +1656,49 @@
         return;
       }
 
-      const sampleItem = state.tray.find(i => i.groupKey === groupKey);
-      dispatchOrderEvent('DELTA_GROUP', {
-        groupKey,
-        delta,
-        sample: sampleItem ? {
-          userName: sampleItem.userName,
-          itemId: sampleItem.id,
-          effectivePrice: sampleItem.effectivePrice,
-          optionSummary: sampleItem.optionSummary
-        } : null
+      const matchingItems = state.tray.filter(i => i.groupKey === groupKey);
+      const sampleItem = matchingItems[0];
+      if (!sampleItem) return;
+      const currentQty = matchingItems.length;
+
+      const isDelete = delta < 0;
+      const actionTitle = isDelete
+        ? '&lt; 정말 삭제하시겠습니까? &gt;'
+        : '&lt; 정말 수량을 추가(수정)하시겠습니까? &gt;';
+      const actionWord = isDelete ? '삭제(수량 -1)' : '수량 추가(+1)';
+
+      openConfirmActionModal({
+        title: actionTitle,
+        isPositive: !isDelete,
+        submitLabel: isDelete ? '네, 삭제합니다 (로그 기록)' : '네, 수정합니다 (로그 기록)',
+        plainSummary: `[${sampleItem.userName}]님의 ${sampleItem.boardName} (${currentQty}개 → ${currentQty + delta}개)`,
+        confirmScriptText: `${isDelete ? '< 정말 삭제하시겠습니까? >' : '< 정말 수정하시겠습니까? >'}\n\n• 대상 주문자: ${sampleItem.userName}\n• 메뉴: ${sampleItem.boardName}${sampleItem.optionSummary ? ' (' + sampleItem.optionSummary + ')' : ''}\n• 변경: ${currentQty}개 → ${currentQty + delta}개\n\n진행하면 실행자 이름이 실시간 삭제/수정 로그에 기록됩니다.`,
+        descHTML: `
+          <div class="font-extrabold text-rose-500 text-xs sm:text-sm mb-1">
+            ${isDelete ? '🚨 &lt; 정말 삭제하시겠습니까? &gt;' : '✏️ &lt; 정말 수량을 수정하시겠습니까? &gt;'}
+          </div>
+          <div class="flex justify-between"><span>대상 주문자:</span><b class="text-[var(--primary)]">👤 ${sampleItem.userName}</b></div>
+          <div class="flex justify-between"><span>대상 메뉴:</span><b>${sampleItem.boardName}</b></div>
+          ${sampleItem.optionSummary ? `<div class="flex justify-between"><span>선택 옵션:</span><span>${sampleItem.optionSummary}</span></div>` : ''}
+          <div class="flex justify-between"><span>수량 변경:</span><b class="${isDelete ? 'text-rose-500' : 'text-emerald-500'}">${currentQty}개 → ${currentQty + delta}개 (${actionWord})</b></div>
+          <div class="flex justify-between"><span>단가:</span><b>${formatPrice(sampleItem.effectivePrice)}</b></div>
+        `,
+        onConfirm: (actorName) => {
+          dispatchOrderEvent('DELTA_GROUP', {
+            groupKey,
+            delta,
+            actorName,
+            targetUserName: sampleItem.userName,
+            menuName: sampleItem.boardName,
+            sample: {
+              userName: sampleItem.userName,
+              itemId: sampleItem.id,
+              effectivePrice: sampleItem.effectivePrice,
+              optionSummary: sampleItem.optionSummary
+            }
+          });
+          showToast(`${isDelete ? '🗑️' : '✏️'} <b>${actorName}</b>님이 <b>${sampleItem.userName}</b>님의 <b>${sampleItem.boardName}</b> ${actionWord} 완료 (로그 기록됨)`);
+        }
       });
     }
 
@@ -1326,8 +1712,7 @@
         showToast('⚠️ 먼저 주문자 이름을 입력해주세요.');
         return;
       }
-      dispatchOrderEvent('CLEAR_USER', { userName: state.userName });
-      showToast(`🗑️ <b>${state.userName}</b>님의 주문 내역을 비웠습니다.`);
+      clearUserOrdersByName(state.userName);
     }
 
     function clearUserOrdersByName(targetName) {
@@ -1336,8 +1721,38 @@
         showToast('⛔ 오후 5시(17:00) 이후에는 주문을 삭제할 수 없습니다!');
         return;
       }
-      dispatchOrderEvent('CLEAR_USER', { userName: targetName });
-      showToast(`🗑️ <b>${targetName}</b>님의 주문 내역을 삭제했습니다.`);
+      const userItems = state.tray.filter(i => i.userName === targetName);
+      if (userItems.length === 0) {
+        showToast(`⚠️ ${targetName}님의 주문 내역이 없습니다.`);
+        return;
+      }
+      const totalUserPrice = userItems.reduce((s, i) => s + i.effectivePrice, 0);
+      const summaryStr = userItems.map(i => i.boardName).join(', ');
+
+      openConfirmActionModal({
+        title: '&lt; 정말 삭제하시겠습니까? &gt;',
+        isPositive: false,
+        submitLabel: `네, ${targetName}님 주문을 삭제합니다`,
+        plainSummary: `[${targetName}]님의 전체 주문 (${userItems.length}개 · ${formatPrice(totalUserPrice)}) 삭제`,
+        confirmScriptText: `< 정말 삭제하시겠습니까? >\n\n• 삭제 대상 주문자: ${targetName}\n• 삭제 메뉴(${userItems.length}개): ${summaryStr}\n• 금액: ${formatPrice(totalUserPrice)}\n\n삭제한 사람의 이름이 실시간 로그에 남습니다.`,
+        descHTML: `
+          <div class="font-extrabold text-rose-500 text-xs sm:text-sm mb-1">
+            🚨 &lt; 정말 삭제하시겠습니까? &gt; (주문자 전체 삭제)
+          </div>
+          <div class="flex justify-between"><span>삭제 대상 주문자:</span><b class="text-rose-500">👤 ${targetName} (${userItems.length}개)</b></div>
+          <div class="flex justify-between"><span>삭제 메뉴 목록:</span><b class="truncate max-w-[220px]">${summaryStr}</b></div>
+          <div class="flex justify-between"><span>삭제 금액 합계:</span><b>${formatPrice(totalUserPrice)}</b></div>
+        `,
+        onConfirm: (actorName) => {
+          dispatchOrderEvent('CLEAR_USER', {
+            userName: targetName,
+            actorName,
+            deletedSummary: `${summaryStr} (총 ${userItems.length}개)`,
+            deletedAmount: totalUserPrice
+          });
+          showToast(`🗑️ <b>${actorName}</b>님이 <b>${targetName}</b>님의 주문 내역을 삭제했습니다. (로그 기록됨)`);
+        }
+      });
     }
 
     function clearTray() {
@@ -1346,8 +1761,476 @@
         showToast('⛔ 오후 5시(17:00) 이후에는 전체 초기화를 할 수 없습니다!');
         return;
       }
-      dispatchOrderEvent('CLEAR_ALL', {});
-      showToast('🗑️ 오늘 전체 장바구니가 초기화되었습니다.');
+      if (state.tray.length === 0) return;
+
+      const byPerson = getOrdersByPerson();
+      const totalAmount = state.tray.reduce((s, i) => s + i.effectivePrice, 0);
+      const allUsersStr = byPerson.map(p => `${p.userName}(${p.totalQty})`).join(', ');
+
+      openConfirmActionModal({
+        title: '&lt; 정말 전체 주문을 삭제하시겠습니까? &gt;',
+        isPositive: false,
+        submitLabel: '네, 전체 장바구니를 초기화합니다',
+        plainSummary: `오늘 전체 주문 (${byPerson.length}명 / ${state.tray.length}개 / ${formatPrice(totalAmount)}) 전체 초기화`,
+        confirmScriptText: `< 정말 삭제하시겠습니까? >\n\n오늘 담긴 전체 단체 주문(${byPerson.length}명 / 총 ${state.tray.length}개 / ${formatPrice(totalAmount)})이 모두 삭제됩니다!\n삭제한 사람의 이름이 실시간 로그에 남습니다.`,
+        descHTML: `
+          <div class="font-extrabold text-rose-500 text-xs sm:text-sm mb-1">
+            🚨 &lt; 정말 삭제하시겠습니까? &gt; (장바구니 전체 초기화)
+          </div>
+          <div class="flex justify-between"><span>삭제 대상 인원:</span><b class="text-rose-500">총 ${byPerson.length}명 (${allUsersStr})</b></div>
+          <div class="flex justify-between"><span>삭제 수량 합계:</span><b>총 ${state.tray.length}개 메뉴</b></div>
+          <div class="flex justify-between"><span>삭제 금액 합계:</span><b>${formatPrice(totalAmount)}</b></div>
+        `,
+        onConfirm: (actorName) => {
+          dispatchOrderEvent('CLEAR_ALL', {
+            actorName,
+            deletedSummary: `참여 ${byPerson.length}명 (${allUsersStr}) · 총 ${state.tray.length}개 전체 초기화`,
+            deletedAmount: totalAmount
+          });
+          showToast(`🚨 <b>${actorName}</b>님이 오늘 전체 장바구니를 초기화했습니다. (로그 기록됨)`);
+        }
+      });
+    }
+
+    // =========================================================================
+    // Final Order Confirmation & Monthly Order History (월별 주문내역창)
+    // =========================================================================
+    function finalizeTodayOrderPrompt() {
+      if (state.tray.length === 0) {
+        showToast('⚠️ 현재 담긴 메뉴가 없어 최종 주문을 확정할 수 없습니다.');
+        return;
+      }
+      const byPerson = getOrdersByPerson();
+      const byMenu = getOrdersByMenu();
+      const totalAmount = state.tray.reduce((s, i) => s + i.effectivePrice, 0);
+      const dl = getDeadlineInfo();
+      const existingToday = state.monthlyOrders[state.todayKey];
+
+      openConfirmActionModal({
+        title: '&lt; 최종 주문으로 확정하시겠습니까? &gt;',
+        isPositive: true,
+        submitLabel: '✅ 최종 주문 확정 및 월별내역 보기',
+        plainSummary: `${state.todayKey} 최종 주문 확정 (참여 ${byPerson.length}명 · 총 ${state.tray.length}개 · ${formatPrice(totalAmount)})`,
+        confirmScriptText: `< 최종 주문으로 확정하시겠습니까? >\n\n• 주문일자: ${state.todayKey}\n• 주문자 명단(${byPerson.length}명): ${byPerson.map(p => `${p.userName}(${formatPrice(p.totalPrice)})`).join(', ')}\n• 총 결제금액: ${formatPrice(totalAmount)}\n\n확정 시 [월별 주문내역창]에 오늘의 명단과 금액이 저장됩니다.`,
+        descHTML: `
+          <div class="font-extrabold text-emerald-500 text-xs sm:text-sm mb-1">
+            ✅ 오늘 장바구니 내역을 최종 주문으로 확정합니다
+          </div>
+          <div class="flex justify-between"><span>주문 일자:</span><b>📅 ${state.todayKey} (${state.orderType})</b></div>
+          <div class="flex justify-between"><span>참여 인원 / 수량:</span><b>👥 ${byPerson.length}명 / 총 ${state.tray.length}개</b></div>
+          <div class="flex justify-between"><span>총 결제 금액:</span><b class="text-emerald-500 text-sm">${formatPrice(totalAmount)}</b></div>
+          <div class="pt-1.5 border-t border-[var(--border)] space-y-1">
+            <div class="font-bold text-[var(--muted-foreground)]">📋 확정될 인원별 명단 및 금액:</div>
+            ${byPerson.map(p => `
+              <div class="flex justify-between text-xs">
+                <span>👤 <b>${p.userName}</b> (${p.items.map(it => `${it.boardName}${it.qty > 1 ? `x${it.qty}` : ''}`).join(', ')})</span>
+                <b class="text-[var(--primary)] shrink-0 ml-2">${formatPrice(p.totalPrice)}</b>
+              </div>
+            `).join('')}
+          </div>
+          ${existingToday ? `<div class="text-xs text-amber-500 font-semibold pt-1">ℹ️ 이미 오늘자 확정 내역이 존재하며, 최신 내역으로 덮어씌워집니다.</div>` : ''}
+        `,
+        onConfirm: (actorName) => {
+          const record = {
+            dateKey: state.todayKey,
+            monthKey: state.todayKey.slice(0, 7),
+            finalizedAt: `${state.todayKey} ${dl.timeStr}`,
+            finalizedBy: actorName,
+            orderType: state.orderType,
+            totalAmount,
+            totalQty: state.tray.length,
+            personCount: byPerson.length,
+            people: byPerson.map(p => ({
+              userName: p.userName,
+              totalQty: p.totalQty,
+              totalPrice: p.totalPrice,
+              totalKcal: p.totalKcal,
+              totalProtein: p.totalProtein,
+              items: p.items.map(it => ({
+                id: it.id,
+                boardName: it.boardName,
+                fullName: it.fullName,
+                optionSummary: it.optionSummary,
+                qty: it.qty,
+                effectivePrice: it.effectivePrice
+              }))
+            })),
+            menus: byMenu.map(m => ({
+              boardName: m.boardName,
+              fullName: m.fullName,
+              optionSummary: m.optionSummary,
+              totalQty: m.totalQty,
+              totalPrice: m.totalPrice,
+              users: m.users
+            }))
+          };
+
+          state.monthlyOrders[state.todayKey] = record;
+          saveMonthlyOrdersToLocal(state.monthlyOrders);
+          state.selectedMonthKey = record.monthKey;
+
+          dispatchOrderEvent('FINALIZE_ORDER', {
+            actorName,
+            record
+          });
+          dispatchMonthlyCloudEvent('MONTHLY_UPSERT', { record });
+
+          closeReceiptModal();
+          openMonthlyModal();
+          showToast(`🎉 <b>${state.todayKey}</b> 최종 주문이 확정되어 월별 주문내역에 기록되었습니다!`);
+        }
+      });
+    }
+
+    function openMonthlyModal() {
+      if (!state.selectedMonthKey) {
+        state.selectedMonthKey = state.todayKey.slice(0, 7);
+      }
+      renderMonthlyModal();
+      const modal = document.getElementById('monthlyHistoryModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeMonthlyModal() {
+      const modal = document.getElementById('monthlyHistoryModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    function changeSelectedMonth(offset) {
+      const parts = (state.selectedMonthKey || state.todayKey.slice(0, 7)).split('-');
+      let year = parseInt(parts[0], 10);
+      let month = parseInt(parts[1], 10) + offset;
+      if (month < 1) {
+        month = 12;
+        year -= 1;
+      } else if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+      state.selectedMonthKey = `${year}-${String(month).padStart(2, '0')}`;
+      renderMonthlyModal();
+    }
+
+    function deleteMonthlyOrderDay(dateKey) {
+      const rec = state.monthlyOrders[dateKey];
+      if (!rec) return;
+      openConfirmActionModal({
+        title: '&lt; 정말 삭제하시겠습니까? &gt;',
+        isPositive: false,
+        submitLabel: `네, ${dateKey} 확정 내역을 삭제합니다`,
+        plainSummary: `${dateKey} 최종 주문 확정 내역 (${rec.personCount}명 · ${formatPrice(rec.totalAmount)}) 삭제`,
+        confirmScriptText: `< 정말 삭제하시겠습니까? >\n\n월별 주문내역에서 [${dateKey}] 최종 주문 기록(${rec.personCount}명 / ${formatPrice(rec.totalAmount)})을 삭제하시겠습니까?`,
+        descHTML: `
+          <div class="font-extrabold text-rose-500 text-xs sm:text-sm mb-1">
+            🚨 &lt; 정말 삭제하시겠습니까? &gt; (월별 확정 내역 삭제)
+          </div>
+          <div class="flex justify-between"><span>삭제 대상 일자:</span><b>📅 ${dateKey}</b></div>
+          <div class="flex justify-between"><span>확정 인원 / 수량:</span><b>👥 ${rec.personCount}명 / ${rec.totalQty}개</b></div>
+          <div class="flex justify-between"><span>확정 금액:</span><b class="text-rose-500">${formatPrice(rec.totalAmount)}</b></div>
+        `,
+        onConfirm: (actorName) => {
+          delete state.monthlyOrders[dateKey];
+          saveMonthlyOrdersToLocal(state.monthlyOrders);
+          dispatchMonthlyCloudEvent('MONTHLY_DELETE', { dateKey, actorName });
+          renderMonthlyModal();
+          refreshAllUI();
+          showToast(`🗑️ <b>${actorName}</b>님이 <b>${dateKey}</b> 최종 주문 기록을 삭제했습니다.`);
+        }
+      });
+    }
+
+    function getMonthSummaryData(monthKey) {
+      const allDates = Object.keys(state.monthlyOrders || {})
+        .filter(d => d.startsWith(monthKey))
+        .sort((a, b) => b.localeCompare(a)); // Newest date first
+
+      const dayRecords = allDates.map(d => state.monthlyOrders[d]).filter(Boolean);
+      let monthTotalAmount = 0;
+      let monthTotalQty = 0;
+      const personAggMap = new Map();
+
+      dayRecords.forEach(rec => {
+        monthTotalAmount += (rec.totalAmount || 0);
+        monthTotalQty += (rec.totalQty || 0);
+        (rec.people || []).forEach(p => {
+          const u = p.userName || '익명';
+          if (!personAggMap.has(u)) {
+            personAggMap.set(u, {
+              userName: u,
+              daysCount: 0,
+              totalQty: 0,
+              totalPrice: 0,
+              history: []
+            });
+          }
+          const entry = personAggMap.get(u);
+          entry.daysCount += 1;
+          entry.totalQty += (p.totalQty || 0);
+          entry.totalPrice += (p.totalPrice || 0);
+          entry.history.push({
+            dateKey: rec.dateKey,
+            totalPrice: p.totalPrice,
+            itemsStr: (p.items || []).map(it => `${it.boardName}${it.qty > 1 ? `x${it.qty}` : ''}`).join(', ')
+          });
+        });
+      });
+
+      const peopleList = Array.from(personAggMap.values()).sort((a, b) => b.totalPrice - a.totalPrice);
+      return {
+        monthKey,
+        dayRecords,
+        monthTotalAmount,
+        monthTotalQty,
+        peopleList
+      };
+    }
+
+    function copyMonthlySummaryText() {
+      const data = getMonthSummaryData(state.selectedMonthKey);
+      if (data.dayRecords.length === 0) {
+        showToast('⚠️ 선택한 월에 확정된 최종 주문 내역이 없습니다.');
+        return;
+      }
+
+      const lines = [
+        `====================================`,
+        `📅 [샐러리아 ${data.monthKey} 월별 최종 주문 & 금액 정산서]`,
+        `• 확정 주문 일수: 총 ${data.dayRecords.length}일`,
+        `• 월 누적 참여 인원: 총 ${data.peopleList.length}명 (총 ${data.monthTotalQty}개)`,
+        `• 월 총 주문 합계: ${formatPrice(data.monthTotalAmount)}`,
+        `====================================`,
+        `[1. 👤 인원별 월 누적 주문 금액 명단]`
+      ];
+
+      data.peopleList.forEach((p, idx) => {
+        lines.push(`${idx + 1}. ${p.userName} — 총 ${formatPrice(p.totalPrice)} (${p.daysCount}일 / ${p.totalQty}개)`);
+        p.history.forEach(h => {
+          lines.push(`   └ [${h.dateKey}] ${h.itemsStr} (${formatPrice(h.totalPrice)})`);
+        });
+      });
+
+      lines.push(`------------------------------------`);
+      lines.push(`[2. 📆 일자별 최종 주문 내역]`);
+      data.dayRecords.forEach(rec => {
+        lines.push(`■ ${rec.dateKey} (${rec.orderType || '매장식사'}) — 총 ${rec.personCount}명 / ${rec.totalQty}개 / ${formatPrice(rec.totalAmount)}`);
+        lines.push(`  • 명단 및 금액: ${(rec.people || []).map(p => `${p.userName}(${formatPrice(p.totalPrice)})`).join(', ')}`);
+      });
+      lines.push(`====================================`);
+
+      navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        showToast(`📋 ${data.monthKey} 월별 주문 명단 및 금액 정산서가 복사되었습니다!`);
+      });
+    }
+
+    function renderMonthlyModal() {
+      const content = document.getElementById('monthlyModalContent');
+      if (!content) return;
+
+      const data = getMonthSummaryData(state.selectedMonthKey);
+      const [yyyy, mm] = data.monthKey.split('-');
+      const todayHasTray = state.tray.length > 0;
+      const todayTotal = state.tray.reduce((s, i) => s + i.effectivePrice, 0);
+      const todayPeople = getOrdersByPerson();
+
+      content.innerHTML = `
+        <!-- Modal Header -->
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">📅</span>
+            <div>
+              <h2 class="text-base sm:text-lg font-black text-[var(--foreground)]">월별 최종 주문내역 & 인원별 금액 정산창</h2>
+              <p class="text-xs text-[var(--muted-foreground)]">최종 주문으로 확정한 날짜별 주문자 명단과 개인별/월별 금액이 자동 합산됩니다.</p>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2 ml-auto">
+            <!-- Month Selector -->
+            <div class="inline-flex items-center rounded-xl border border-[var(--border)] bg-[var(--secondary)] p-1 text-xs font-extrabold">
+              <button onclick="changeSelectedMonth(-1)" class="px-2.5 py-1 rounded-lg hover:bg-[var(--card)] transition">◀ 이전달</button>
+              <span class="px-3 py-1 text-sm font-black text-[var(--primary)]">${yyyy}년 ${parseInt(mm, 10)}월</span>
+              <button onclick="changeSelectedMonth(1)" class="px-2.5 py-1 rounded-lg hover:bg-[var(--card)] transition">다음달 ▶</button>
+            </div>
+            <button onclick="closeMonthlyModal()" class="px-2.5 py-1.5 rounded-xl border border-[var(--border)] text-xs font-bold hover:bg-[var(--secondary)]">✕ 닫기</button>
+          </div>
+        </div>
+
+        <!-- Quick Finalize Banner for Today's Cart -->
+        <div class="rounded-xl border-2 ${todayHasTray ? 'border-amber-500/70 bg-amber-500/10' : 'border-[var(--border)] bg-[var(--secondary)]/50'} p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="space-y-0.5 text-xs">
+            <div class="font-extrabold text-[var(--foreground)] flex items-center gap-1.5">
+              <span>🛒 오늘(${state.todayKey}) 현재 장바구니 상태:</span>
+              ${todayHasTray
+                ? `<span class="text-amber-500 font-black">참여 ${todayPeople.length}명 (${todayPeople.map(p => p.userName).join(', ')}) · 총 ${state.tray.length}개 · ${formatPrice(todayTotal)}</span>`
+                : `<span class="text-[var(--muted-foreground)]">현재 담긴 메뉴 없음</span>`
+              }
+            </div>
+            <div class="text-[var(--muted-foreground)]">
+              ${state.monthlyOrders[state.todayKey]
+                ? `✅ 오늘(${state.todayKey}) 최종 주문이 이미 확정되어 있습니다 (확정시각: ${state.monthlyOrders[state.todayKey].finalizedAt} · 확정자: ${state.monthlyOrders[state.todayKey].finalizedBy})`
+                : `장바구니에 메뉴를 다 담은 뒤 [최종 주문 확정] 버튼을 누르면 아래 월별 명단과 금액에 즉시 반영됩니다.`
+              }
+            </div>
+          </div>
+          ${todayHasTray ? `
+            <button
+              onclick="finalizeTodayOrderPrompt()"
+              class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold shadow-sm shrink-0 transition"
+            >
+              ✅ ${state.monthlyOrders[state.todayKey] ? '오늘 최종 주문 내역 갱신하기' : '오늘 장바구니 최종 주문으로 확정'}
+            </button>
+          ` : ''}
+        </div>
+
+        <!-- Monthly KPI Summary Cards -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+            <div class="text-xs text-[var(--muted-foreground)] font-semibold">${parseInt(mm, 10)}월 확정 주문 일수</div>
+            <div class="text-lg font-black text-[var(--foreground)] mt-0.5">${data.dayRecords.length}일</div>
+          </div>
+          <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+            <div class="text-xs text-[var(--muted-foreground)] font-semibold">${parseInt(mm, 10)}월 주문자 명단 수</div>
+            <div class="text-lg font-black text-[var(--primary)] mt-0.5">총 ${data.peopleList.length}명</div>
+          </div>
+          <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 text-center">
+            <div class="text-xs text-[var(--muted-foreground)] font-semibold">${parseInt(mm, 10)}월 누적 주문 수량</div>
+            <div class="text-lg font-black text-[var(--foreground)] mt-0.5">총 ${data.monthTotalQty}개</div>
+          </div>
+          <div class="rounded-xl border-2 border-[var(--primary)] bg-[var(--primary)]/10 p-3 text-center">
+            <div class="text-xs text-[var(--primary)] font-extrabold">${parseInt(mm, 10)}월 총 주문 합계 금액</div>
+            <div class="text-lg font-black text-[var(--primary)] mt-0.5">${formatPrice(data.monthTotalAmount)}</div>
+          </div>
+        </div>
+
+        ${data.dayRecords.length === 0 ? `
+          <div class="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--background)]/60 p-8 text-center space-y-2">
+            <div class="text-3xl">📭</div>
+            <div class="text-sm font-extrabold text-[var(--foreground)]">${yyyy}년 ${parseInt(mm, 10)}월에 확정된 최종 주문 내역이 없습니다</div>
+            <p class="text-xs text-[var(--muted-foreground)]">
+              메뉴를 장바구니에 담은 후 상단 또는 영수증의 <b>[✅ 최종 주문 확정]</b> 버튼을 누르면<br/>
+              해당 날짜의 주문자 명단과 금액이 이곳에 자동으로 기록됩니다.
+            </p>
+          </div>
+        ` : `
+          <!-- Section 1: Monthly Per-Person Roster & Total Amount Table (명단과 금액) -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs sm:text-sm font-black text-[var(--foreground)] flex items-center gap-1.5">
+                <span>👤 1. ${yyyy}년 ${parseInt(mm, 10)}월 주문자별 누적 명단 & 금액 정산표</span>
+                <span class="px-2 py-0.5 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] text-xs font-extrabold">${data.peopleList.length}명</span>
+              </h3>
+              <button
+                onclick="copyMonthlySummaryText()"
+                class="px-3 py-1.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold shadow-xs hover:opacity-90 transition"
+              >
+                📋 월별 명단·금액 정산서 복사
+              </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--background)]">
+              <table class="w-full text-xs text-left">
+                <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] border-b border-[var(--border)] font-extrabold">
+                  <tr>
+                    <th class="py-2.5 px-3">순위</th>
+                    <th class="py-2.5 px-3">주문자 이름 (명단)</th>
+                    <th class="py-2.5 px-3 text-center">참여 일수</th>
+                    <th class="py-2.5 px-3 text-center">총 주문 수량</th>
+                    <th class="py-2.5 px-3">일자별 주문 메뉴 내역</th>
+                    <th class="py-2.5 px-3 text-right">개인별 월 합계 금액</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-[var(--border)]">
+                  ${data.peopleList.map((p, idx) => `
+                    <tr class="hover:bg-[var(--secondary)]/50">
+                      <td class="py-2.5 px-3 font-bold text-[var(--muted-foreground)]">${idx + 1}</td>
+                      <td class="py-2.5 px-3 font-extrabold text-[var(--foreground)] whitespace-nowrap">
+                        <span class="px-2 py-0.5 rounded-full bg-[var(--primary)]/15 text-[var(--primary)]">👤 ${p.userName}</span>
+                      </td>
+                      <td class="py-2.5 px-3 text-center font-semibold">${p.daysCount}일</td>
+                      <td class="py-2.5 px-3 text-center font-bold">${p.totalQty}개</td>
+                      <td class="py-2.5 px-3 space-y-0.5">
+                        ${p.history.map(h => `
+                          <div class="text-xs text-[var(--muted-foreground)]">
+                            <b class="text-[var(--foreground)]">[${h.dateKey.slice(5)}]</b> ${h.itemsStr} <span class="text-[var(--primary)] font-bold">(${formatPrice(h.totalPrice)})</span>
+                          </div>
+                        `).join('')}
+                      </td>
+                      <td class="py-2.5 px-3 text-right font-black text-sm text-[var(--primary)] whitespace-nowrap">
+                        ${formatPrice(p.totalPrice)}
+                      </td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+                <tfoot class="bg-[var(--secondary)]/80 border-t-2 border-[var(--border)] font-black text-xs sm:text-sm">
+                  <tr>
+                    <td colspan="3" class="py-2.5 px-3">월 전체 합계 (${data.peopleList.length}명)</td>
+                    <td class="py-2.5 px-3 text-center">${data.monthTotalQty}개</td>
+                    <td class="py-2.5 px-3"></td>
+                    <td class="py-2.5 px-3 text-right text-[var(--primary)]">${formatPrice(data.monthTotalAmount)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 2: Daily Finalized Order Breakdown -->
+          <div class="space-y-2.5 pt-2">
+            <h3 class="text-xs sm:text-sm font-black text-[var(--foreground)]">
+              📆 2. 일자별 최종 주문 상세 내역 (누가 얼마어치 시켰는지 일별 기록)
+            </h3>
+            <div class="space-y-2.5">
+              ${data.dayRecords.map(rec => `
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3.5 space-y-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-2">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <span class="px-2.5 py-1 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-black">
+                        📅 ${rec.dateKey}
+                      </span>
+                      <span class="text-xs font-bold text-[var(--foreground)]">
+                        참여 ${rec.personCount}명 · 총 ${rec.totalQty}개 · <b class="text-[var(--primary)]">${formatPrice(rec.totalAmount)}</b>
+                      </span>
+                      <span class="text-xs text-[var(--muted-foreground)]">
+                        (확정자: ${rec.finalizedBy || '-'} · ${rec.finalizedAt || ''})
+                      </span>
+                    </div>
+                    <button
+                      onclick="deleteMonthlyOrderDay('${rec.dateKey}')"
+                      class="text-xs text-rose-500 hover:underline font-bold"
+                    >
+                      🗑️ 이 날짜 기록 삭제
+                    </button>
+                  </div>
+
+                  <!-- People & Amounts on that day -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    ${(rec.people || []).map(p => `
+                      <div class="rounded-lg border border-[var(--border)] bg-[var(--card)] p-2.5 text-xs space-y-1">
+                        <div class="flex items-center justify-between border-b border-dashed border-[var(--border)] pb-1">
+                          <span class="font-extrabold text-[var(--foreground)]">👤 ${p.userName} <span class="text-[var(--muted-foreground)] font-normal">(${p.totalQty}개)</span></span>
+                          <span class="font-black text-[var(--primary)]">${formatPrice(p.totalPrice)}</span>
+                        </div>
+                        <div class="space-y-0.5 text-[var(--muted-foreground)]">
+                          ${(p.items || []).map(it => `
+                            <div class="flex justify-between gap-1">
+                              <span class="truncate">• ${it.boardName}${it.optionSummary ? ` (${it.optionSummary})` : ''} x${it.qty}</span>
+                              <span class="shrink-0">${formatPrice(it.effectivePrice * it.qty)}</span>
+                            </div>
+                          `).join('')}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `}
+      `;
     }
 
     // Group by (userName + itemId + optionSummary)
@@ -1723,20 +2606,28 @@
         </div>
 
         <!-- Action Buttons -->
-        <div class="grid grid-cols-2 gap-2 pt-2 no-print">
+        <div class="space-y-2 pt-2 no-print">
           <button
-            id="btnCopyReceipt"
-            onclick="copyReceiptText()"
-            class="py-2.5 px-3 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition flex items-center justify-center gap-1.5"
+            onclick="finalizeTodayOrderPrompt()"
+            class="w-full py-2.5 px-3 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm font-black shadow-md transition flex items-center justify-center gap-1.5"
           >
-            <span>📋 단체 주문서 복사</span>
+            <span>✅ 최종 주문으로 확정 (월별 주문내역에 명단·금액 저장)</span>
           </button>
-          <button
-            onclick="window.print()"
-            class="py-2.5 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-1.5"
-          >
-            <span>🖨️ 인쇄 / PDF 저장</span>
-          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button
+              id="btnCopyReceipt"
+              onclick="copyReceiptText()"
+              class="py-2.5 px-3 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition flex items-center justify-center gap-1.5"
+            >
+              <span>📋 단체 주문서 복사</span>
+            </button>
+            <button
+              onclick="window.print()"
+              class="py-2.5 px-3 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition flex items-center justify-center gap-1.5"
+            >
+              <span>🖨️ 인쇄 / PDF 저장</span>
+            </button>
+          </div>
         </div>
       `;
     }
@@ -1796,8 +2687,8 @@
       const byPerson = getOrdersByPerson();
       const byMenu = getOrdersByMenu();
       const totalAmount = state.tray.reduce((s, i) => s + i.effectivePrice, 0);
-      const totalKcal = state.tray.reduce((s, i) => s + (i.hasNutrition ? i.kcal : 0), 0);
-      const totalProt = state.tray.reduce((s, i) => s + (i.hasNutrition ? i.protein : 0), 0);
+      const monthCount = Object.keys(state.monthlyOrders || {}).filter(d => d.startsWith(state.todayKey.slice(0, 7))).length;
+      const isFinalizedToday = Boolean(state.monthlyOrders[state.todayKey]);
 
       return `
         <div class="bg-[var(--card)] border-2 border-[var(--primary)]/60 rounded-2xl p-3 sm:p-4 shadow-md space-y-3">
@@ -1819,6 +2710,11 @@
                   : `⛔ 금일 17:00 주문 마감됨 (현재 ${dl.timeStr})`
                 }
               </span>
+              ${isFinalizedToday ? `
+                <span class="px-2.5 py-1 rounded-lg bg-amber-500/15 text-amber-500 border border-amber-500/30 text-xs font-extrabold">
+                  ✅ 금일 최종주문 확정완료
+                </span>
+              ` : ''}
               ${dl.passed17 ? `
                 <button
                   onclick="toggleOverrideDeadline()"
@@ -1834,7 +2730,7 @@
                 ${state.syncStatus === 'live' ? '🟢 실시간 공유 서버 연결됨' : '🟡 실시간 로컬/브라우저 동기화중'}
               </span>
               <button
-                onclick="fetchCloudEventHistory(); showToast('🔄 최신 주문 내역을 동기화했습니다.');"
+                onclick="fetchCloudEventHistory(); fetchMonthlyCloudHistory(); showToast('🔄 최신 주문 내역 및 로그를 동기화했습니다.');"
                 class="px-2 py-1 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] font-bold text-xs"
                 title="실시간 수동 새로고침"
               >
@@ -1843,7 +2739,7 @@
             </div>
           </div>
 
-          <!-- Row 2: My Name Input Bar -->
+          <!-- Row 2: My Name Input Bar & Final Order / Monthly History Buttons -->
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--secondary)]/60 p-2.5 rounded-xl border border-[var(--border)]">
             <div class="flex items-center gap-2 flex-1">
               <label for="userNameInput" class="text-xs sm:text-sm font-extrabold text-[var(--foreground)] whitespace-nowrap flex items-center gap-1">
@@ -1856,7 +2752,7 @@
                 placeholder="주문자 이름 입력 (예: 홍길동)"
                 oninput="state.userName = this.value.trim(); localStorage.setItem('salaria_user_name', state.userName); const b = document.getElementById('currentOrdererBadge'); if (b) { b.textContent = state.userName ? state.userName + ' 님으로 담기 활성 ✓' : '이름을 먼저 입력해주세요'; b.className = 'text-xs font-bold px-2.5 py-1 rounded-full ' + (state.userName ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-amber-500/20 text-amber-500'); }"
                 onblur="notifyStore()"
-                class="flex-1 max-w-[220px] px-3 py-1.5 rounded-lg border-2 border-[var(--primary)] bg-[var(--background)] text-[var(--foreground)] text-xs sm:text-sm font-bold focus:outline-none"
+                class="flex-1 max-w-[200px] px-3 py-1.5 rounded-lg border-2 border-[var(--primary)] bg-[var(--background)] text-[var(--foreground)] text-xs sm:text-sm font-bold focus:outline-none"
               />
               <span
                 id="currentOrdererBadge"
@@ -1870,12 +2766,18 @@
               </span>
             </div>
 
-            <div class="flex items-center gap-1.5 self-end sm:self-auto">
+            <div class="flex flex-wrap items-center gap-1.5 self-end sm:self-auto">
               <button
-                onclick="copyReceiptText()"
-                class="px-2.5 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:bg-[var(--secondary)] text-xs font-bold transition"
+                onclick="openMonthlyModal()"
+                class="px-2.5 py-1.5 rounded-lg bg-[var(--background)] border-2 border-[var(--primary)] hover:bg-[var(--secondary)] text-xs font-extrabold transition"
               >
-                📋 단체 주문서 복사
+                📅 월별 주문내역 (${monthCount}일)
+              </button>
+              <button
+                onclick="finalizeTodayOrderPrompt()"
+                class="px-2.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-extrabold shadow-xs transition"
+              >
+                ✅ 최종 주문 확정
               </button>
               <button
                 onclick="openReceiptModal()"
@@ -1886,7 +2788,27 @@
             </div>
           </div>
 
-          <!-- Row 3: Live Group Order Board (Who Ordered What) -->
+          <!-- Deleter / Modifier Live Alert Banner (Always visible if someone deleted/modified today) -->
+          ${state.deleterNames.length > 0 ? `
+            <div class="rounded-xl border border-rose-500/40 bg-rose-500/10 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex flex-wrap items-center gap-1.5">
+                <span class="font-extrabold text-rose-500">🚨 오늘 주문 삭제/수정한 사람 명단:</span>
+                ${state.deleterNames.map(d => `
+                  <span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-500 font-extrabold">
+                    👤 ${d.actorName} (${d.deleteCount > 0 ? `삭제 ${d.deleteCount}건` : ''}${d.deleteCount > 0 && d.modifyCount > 0 ? ' · ' : ''}${d.modifyCount > 0 ? `수정 ${d.modifyCount}건` : ''})
+                  </span>
+                `).join('')}
+              </div>
+              <button
+                onclick="setBoardTab('auditLog'); state.boardExpanded = true; notifyStore();"
+                class="px-2 py-0.5 rounded bg-rose-600 text-white font-bold text-xs hover:bg-rose-700 transition"
+              >
+                📜 상세 삭제/수정 로그 보기 (${state.auditLogs.length}건)
+              </button>
+            </div>
+          ` : ''}
+
+          <!-- Row 3: Live Group Order Board (Who Ordered What + Audit Log Tab) -->
           <div class="space-y-2">
             <div class="flex flex-wrap items-center justify-between gap-2">
               <div class="flex items-center gap-2">
@@ -1898,7 +2820,7 @@
                 </span>
               </div>
 
-              <div class="flex items-center gap-1.5">
+              <div class="flex flex-wrap items-center gap-1.5">
                 <div class="inline-flex rounded-lg border border-[var(--border)] bg-[var(--background)] p-0.5 text-xs">
                   <button
                     onclick="setBoardTab('byPerson')"
@@ -1920,6 +2842,18 @@
                   >
                     🍱 메뉴별 합산 (${byMenu.length}종)
                   </button>
+                  <button
+                    onclick="setBoardTab('auditLog')"
+                    class="px-2.5 py-1 rounded-md font-bold transition ${
+                      state.boardTab === 'auditLog'
+                        ? 'bg-rose-600 text-white'
+                        : state.auditLogs.length > 0
+                          ? 'text-rose-500 font-extrabold hover:bg-rose-500/10'
+                          : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+                    }"
+                  >
+                    🚨 삭제/수정 로그 (${state.auditLogs.length}건)
+                  </button>
                 </div>
                 <button
                   onclick="toggleBoardExpanded()"
@@ -1931,7 +2865,56 @@
             </div>
 
             ${state.boardExpanded ? (
-              state.tray.length === 0 ? `
+              state.boardTab === 'auditLog' ? `
+                <!-- Audit Log View (Who Deleted / Modified What) -->
+                <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 space-y-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border)] pb-2">
+                    <div class="text-xs font-extrabold text-[var(--foreground)]">
+                      📜 오늘(${state.todayKey}) 실시간 삭제/수정 기록 및 삭제자 명단
+                    </div>
+                    <div class="text-xs text-[var(--muted-foreground)]">
+                      ※ 삭제/수정 시 입력한 실행자 이름과 대상 메뉴가 실시간으로 기록됩니다.
+                    </div>
+                  </div>
+
+                  ${state.auditLogs.length === 0 ? `
+                    <div class="py-6 text-center text-xs text-[var(--muted-foreground)]">
+                      오늘 삭제되거나 수정된 주문 내역이 없습니다.
+                    </div>
+                  ` : `
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-xs text-left">
+                        <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] border-b border-[var(--border)] font-extrabold">
+                          <tr>
+                            <th class="py-2 px-2.5">시각</th>
+                            <th class="py-2 px-2.5">구분</th>
+                            <th class="py-2 px-2.5">삭제/수정한 사람 (실행자)</th>
+                            <th class="py-2 px-2.5">대상 주문자</th>
+                            <th class="py-2 px-2.5">삭제/수정된 메뉴 상세</th>
+                            <th class="py-2 px-2.5 text-right">변동 금액</th>
+                          </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[var(--border)]">
+                          ${state.auditLogs.map(log => `
+                            <tr class="hover:bg-[var(--secondary)]/50">
+                              <td class="py-2 px-2.5 font-mono text-[var(--muted-foreground)] whitespace-nowrap">${log.timeStr}</td>
+                              <td class="py-2 px-2.5 font-bold whitespace-nowrap ${log.isDelete ? 'text-rose-500' : 'text-emerald-500'}">${log.actionLabel}</td>
+                              <td class="py-2 px-2.5 font-extrabold whitespace-nowrap">
+                                <span class="px-2 py-0.5 rounded-full ${log.isDelete ? 'bg-rose-500/15 text-rose-500' : 'bg-[var(--primary)]/15 text-[var(--primary)]'}">
+                                  👤 ${log.actorName}
+                                </span>
+                              </td>
+                              <td class="py-2 px-2.5 font-bold whitespace-nowrap">👤 ${log.targetUserName}</td>
+                              <td class="py-2 px-2.5 text-[var(--foreground)]">${log.detail}</td>
+                              <td class="py-2 px-2.5 text-right font-extrabold whitespace-nowrap ${log.isDelete ? 'text-rose-500' : 'text-[var(--primary)]'}">${log.amountStr}</td>
+                            </tr>
+                          `).join('')}
+                        </tbody>
+                      </table>
+                    </div>
+                  `}
+                </div>
+              ` : state.tray.length === 0 ? `
                 <div class="rounded-xl border border-dashed border-[var(--border)] bg-[var(--background)]/50 p-4 text-center text-xs text-[var(--muted-foreground)]">
                   아직 오늘 담긴 주문이 없습니다. 위에서 <b>내 이름</b>을 적고 아래 메뉴의 <b>+ 담기</b> 버튼을 눌러보세요! (누가 시켰는지 실시간으로 여기에 표시됩니다)
                 </div>
@@ -1956,7 +2939,7 @@
                               <button
                                 onclick="clearUserOrdersByName('${safeUser}')"
                                 class="text-xs text-rose-500 hover:underline font-semibold"
-                                title="이 주문자 내역 전체 삭제"
+                                title="이 주문자 내역 전체 삭제 (< 정말 삭제하시겠습니까? > 확인 후 로그 기록)"
                               >
                                 삭제
                               </button>
@@ -1977,9 +2960,9 @@
                                   <span class="font-bold text-[var(--muted-foreground)]">${formatPrice(it.effectivePrice * it.qty)}</span>
                                   ${dl.canOrder ? `
                                     <div class="inline-flex items-center border border-[var(--border)] rounded bg-[var(--card)]">
-                                      <button onclick="changeGroupQty('${safeKey}', -1)" class="px-1.5 py-0.2 font-bold hover:bg-[var(--secondary)]">-</button>
+                                      <button onclick="changeGroupQty('${safeKey}', -1)" class="px-1.5 py-0.2 font-bold hover:bg-[var(--secondary)]" title="삭제/차감 (확인창)">-</button>
                                       <span class="px-1.5 font-extrabold">${it.qty}</span>
-                                      <button onclick="changeGroupQty('${safeKey}', 1)" class="px-1.5 py-0.2 font-bold hover:bg-[var(--secondary)]">+</button>
+                                      <button onclick="changeGroupQty('${safeKey}', 1)" class="px-1.5 py-0.2 font-bold hover:bg-[var(--secondary)]" title="수량 추가 (확인창)">+</button>
                                     </div>
                                   ` : `<span class="font-extrabold">x${it.qty}</span>`}
                                 </div>
@@ -2774,12 +3757,22 @@
     }
 
     function refreshAllUI() {
+      const mCountEl = document.getElementById('headerMonthlyCount');
+      if (mCountEl) {
+        const curMonth = state.todayKey.slice(0, 7);
+        const mCount = Object.keys(state.monthlyOrders || {}).filter(d => d.startsWith(curMonth)).length;
+        mCountEl.textContent = mCount;
+      }
       notifyStore();
       render();
       renderTray();
       const receiptModal = document.getElementById('receiptModal');
       if (receiptModal && !receiptModal.classList.contains('hidden')) {
         renderReceiptModal();
+      }
+      const monthlyModal = document.getElementById('monthlyHistoryModal');
+      if (monthlyModal && !monthlyModal.classList.contains('hidden')) {
+        renderMonthlyModal();
       }
     }
 
