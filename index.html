@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>샐러리아 메뉴판 전 메뉴 가격 · 옵션 · 영양성분 탐색기</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <style>
     :root {
       --background: #f8fafc;
@@ -15,12 +18,8 @@
       --primary-foreground: #ffffff;
       --secondary: #f1f5f9;
       --secondary-foreground: #334155;
-      --muted: #f1f5f9;
       --muted-foreground: #64748b;
-      --accent: #f1f5f9;
-      --accent-foreground: #0f172a;
       --border: #e2e8f0;
-      --placeholder: #94a3b8;
     }
     @media (prefers-color-scheme: dark) {
       :root {
@@ -31,15 +30,13 @@
         --primary: #10b981;
         --primary-foreground: #ffffff;
         --secondary: #334155;
-        --secondary-foreground: #f1f5f9;
-        --muted: #1e293b;
+        --secondary-foreground: #e2e8f0;
         --muted-foreground: #94a3b8;
-        --accent: #334155;
-        --accent-foreground: #f8fafc;
         --border: #334155;
-        --placeholder: #64748b;
       }
     }
+  </style>
+  <style>
     .custom-scroll::-webkit-scrollbar {
       width: 5px;
       height: 5px;
@@ -112,10 +109,11 @@
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <div class="min-w-0 flex items-center gap-2">
             <span id="appTitle" class="text-base sm:text-xl font-extrabold tracking-tight text-[var(--foreground)] truncate">
-              🥗 샐러리아 메뉴·영양 탐색기
+              🥗 샐러리아 실시간 단체주문 · 영양 탐색기
             </span>
-            <span id="pcBadge" class="hidden sm:inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-[var(--secondary)] text-[var(--secondary-foreground)]">
-              115종 완비
+            <span id="liveSyncBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-500">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>LIVE</span>
             </span>
           </div>
 
@@ -169,6 +167,9 @@
     </div>
 
     <div id="mainInner" class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-3">
+      <!-- React Live Group Order Board & User Name Input Bar -->
+      <div id="reactLiveBoardRoot"></div>
+
       <!-- Category Option Info & Global Option Controls Banner -->
       <div id="categoryBanner" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm">
       </div>
@@ -255,8 +256,11 @@
       <!-- Expandable Tray Items Drawer -->
       <div id="trayDrawer" class="hidden border-b border-[var(--border)] pb-2">
         <div class="flex items-center justify-between mb-1.5">
-          <span class="text-xs font-bold text-[var(--muted-foreground)]">담긴 메뉴 목록 (-/+ 수량 조절)</span>
-          <button onclick="clearTray()" class="text-xs text-rose-500 font-semibold hover:underline">전체 비우기</button>
+          <span class="text-xs font-bold text-[var(--muted-foreground)]">실시간 장바구니 담긴 메뉴 (주문자 표시 · -/+ 수량 조절)</span>
+          <div class="flex items-center gap-2">
+            <button onclick="clearMyTray()" class="text-xs text-amber-500 font-semibold hover:underline">내 주문만 비우기</button>
+            <button onclick="clearTray()" class="text-xs text-rose-500 font-semibold hover:underline">전체 초기화</button>
+          </div>
         </div>
         <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="trayItems"></div>
       </div>
@@ -271,9 +275,35 @@
             목록 ▲
           </button>
           <button onclick="openReceiptModal()" class="px-4 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
-            <span>🧾 영수증 보기</span>
+            <span>🧾 단체영수증</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Name Prompt Modal (when adding item without a name set) -->
+  <div id="namePromptModal" onclick="closeNamePromptModal()" class="fixed inset-0 bg-black/60 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div onclick="event.stopPropagation()" class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-3.5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-base font-extrabold text-[var(--foreground)]">👤 주문자 이름 입력</h3>
+        <button onclick="closeNamePromptModal()" class="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]">✕</button>
+      </div>
+      <p class="text-xs text-[var(--muted-foreground)] leading-relaxed">
+        누가 시켰는지 실시간 단체 장바구니에 표시되도록 이름을 입력해주세요!
+      </p>
+      <input
+        id="modalNameInput"
+        type="text"
+        placeholder="이름 입력 (예: 홍길동)"
+        onkeydown="if(event.key==='Enter') confirmNamePrompt()"
+        class="w-full px-3 py-2.5 rounded-xl border-2 border-[var(--primary)] bg-[var(--background)] text-[var(--foreground)] text-sm font-bold focus:outline-none"
+      />
+      <div class="flex justify-end gap-2 pt-1">
+        <button onclick="closeNamePromptModal()" class="px-3.5 py-2 rounded-xl border border-[var(--border)] text-xs font-semibold">취소</button>
+        <button onclick="confirmNamePrompt()" class="px-4 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold shadow-sm">
+          확인 후 메뉴 담기
+        </button>
       </div>
     </div>
   </div>
@@ -536,8 +566,63 @@
       };
     });
 
+    // =========================================================================
+    // KST (Asia/Seoul) Date & 17:00 Deadline Helpers
+    // =========================================================================
+    function getKSTNow() {
+      const now = new Date();
+      const utcMs = now.getTime() + (now.getTimezoneOffset() * 60000);
+      return new Date(utcMs + (9 * 3600000));
+    }
+
+    function getKSTDateKey() {
+      const kst = getKSTNow();
+      const y = kst.getFullYear();
+      const m = String(kst.getMonth() + 1).padStart(2, '0');
+      const d = String(kst.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function getDeadlineInfo() {
+      const kst = getKSTNow();
+      const h = kst.getHours();
+      const m = kst.getMinutes();
+      const s = kst.getSeconds();
+      const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+
+      if (h >= 17) {
+        return {
+          passed17: true,
+          canOrder: !!state.overrideDeadline,
+          timeStr,
+          remainStr: '금일 17:00 마감 완료'
+        };
+      }
+
+      const targetSec = 17 * 3600;
+      const curSec = h * 3600 + m * 60 + s;
+      const diff = Math.max(0, targetSec - curSec);
+      const rh = String(Math.floor(diff / 3600)).padStart(2, '0');
+      const rm = String(Math.floor((diff % 3600) / 60)).padStart(2, '0');
+      const rs = String(diff % 60).padStart(2, '0');
+      return {
+        passed17: false,
+        canOrder: true,
+        timeStr,
+        remainStr: `${rh}:${rm}:${rs} 남음`
+      };
+    }
+
     let state = {
       deviceMode: window.innerWidth < 768 ? 'mobile' : 'pc',
+      todayKey: getKSTDateKey(),
+      userName: (localStorage.getItem('salaria_user_name') || '').trim(),
+      pendingMenuId: null,
+      overrideDeadline: false,
+      boardTab: 'byPerson', // 'byPerson' | 'byMenu'
+      boardExpanded: true,
+      receiptScope: 'all', // 'all' | 'mine'
+      syncStatus: 'connecting', // 'connecting' | 'live' | 'local'
       category: 'ALL',
       viewMode: 'card',
       globalWholeWheat: false,
@@ -552,6 +637,363 @@
       },
       tray: []
     };
+
+    // =========================================================================
+    // Reactive Store & Real-Time Multi-Device Sync (ntfy.sh SSE + BroadcastChannel + localStorage)
+    // =========================================================================
+    const storeListeners = new Set();
+    function subscribeStore(listener) {
+      storeListeners.add(listener);
+      return () => storeListeners.delete(listener);
+    }
+    function notifyStore() {
+      storeListeners.forEach(fn => {
+        try { fn(); } catch (e) {}
+      });
+    }
+
+    const appliedEventIds = new Set();
+    let eventLog = [];
+    let sseSource = null;
+    const bcChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('salaria_realtime_v1') : null;
+
+    function getLocalStorageKey(dateKey) {
+      return `salaria_group_events_${dateKey}`;
+    }
+
+    function getCloudTopic(dateKey) {
+      return `salaria_gonghangh_kr_${dateKey.replace(/-/g, '')}`;
+    }
+
+    function cleanOldDateStorage(currentDateKey) {
+      try {
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('salaria_group_events_') && k !== getLocalStorageKey(currentDateKey)) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
+    }
+
+    function rebuildTrayFromEvents() {
+      const items = [];
+      const sorted = [...eventLog].sort((a, b) => (a.ts || 0) - (b.ts || 0));
+
+      sorted.forEach(ev => {
+        if (!ev || ev.dateKey !== state.todayKey) return;
+        const p = ev.payload || {};
+        if (ev.type === 'ADD') {
+          const menu = MENU_DATA.find(m => m.id === p.itemId);
+          if (!menu) return;
+          const userName = (p.userName || '익명').trim();
+          const optionSummary = p.optionSummary || '';
+          const effectivePrice = typeof p.effectivePrice === 'number' ? p.effectivePrice : menu.price;
+          const extraPrice = effectivePrice - menu.price;
+          items.push({
+            ...menu,
+            userName,
+            effectivePrice,
+            extraPrice,
+            optionSummary,
+            groupKey: `${userName}::${menu.id}::${optionSummary}`,
+            trayId: ev.eid
+          });
+        } else if (ev.type === 'DELTA_GROUP') {
+          const targetKey = p.groupKey;
+          const delta = p.delta;
+          if (delta > 0 && p.sample) {
+            const menu = MENU_DATA.find(m => m.id === p.sample.itemId);
+            if (menu) {
+              items.push({
+                ...menu,
+                userName: p.sample.userName,
+                effectivePrice: p.sample.effectivePrice,
+                extraPrice: p.sample.effectivePrice - menu.price,
+                optionSummary: p.sample.optionSummary || '',
+                groupKey: targetKey,
+                trayId: ev.eid
+              });
+            }
+          } else if (delta < 0) {
+            for (let i = items.length - 1; i >= 0; i--) {
+              if (items[i].groupKey === targetKey) {
+                items.splice(i, 1);
+                break;
+              }
+            }
+          }
+        } else if (ev.type === 'CLEAR_USER') {
+          const targetUser = (p.userName || '').trim();
+          for (let i = items.length - 1; i >= 0; i--) {
+            if (items[i].userName === targetUser) {
+              items.splice(i, 1);
+            }
+          }
+        } else if (ev.type === 'CLEAR_ALL') {
+          items.length = 0;
+        }
+      });
+
+      state.tray = items;
+    }
+
+    function saveEventsToLocal() {
+      try {
+        localStorage.setItem(getLocalStorageKey(state.todayKey), JSON.stringify(eventLog));
+      } catch (e) {}
+    }
+
+    function ingestEvent(ev, fromLocalOrRemote = false) {
+      if (!ev || !ev.eid || ev.dateKey !== state.todayKey) return false;
+      if (appliedEventIds.has(ev.eid)) return false;
+      appliedEventIds.add(ev.eid);
+      eventLog.push(ev);
+      saveEventsToLocal();
+      rebuildTrayFromEvents();
+      if (fromLocalOrRemote) {
+        refreshAllUI();
+      }
+      return true;
+    }
+
+    async function dispatchOrderEvent(type, payload) {
+      const ev = {
+        eid: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        ts: Date.now(),
+        dateKey: state.todayKey,
+        type,
+        payload
+      };
+
+      ingestEvent(ev, true);
+
+      if (bcChannel) {
+        try { bcChannel.postMessage(ev); } catch (e) {}
+      }
+
+      // Publish to cloud real-time channel (ntfy.sh)
+      try {
+        const topic = getCloudTopic(state.todayKey);
+        await fetch(`https://ntfy.sh/${topic}`, {
+          method: 'POST',
+          body: JSON.stringify(ev)
+        });
+        state.syncStatus = 'live';
+        notifyStore();
+      } catch (e) {
+        state.syncStatus = 'local';
+        notifyStore();
+      }
+    }
+
+    async function fetchCloudEventHistory() {
+      try {
+        const topic = getCloudTopic(state.todayKey);
+        const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=all`);
+        if (!res.ok) return;
+        const text = await res.text();
+        let changed = false;
+        text.split('\n').forEach(line => {
+          if (!line.trim()) return;
+          try {
+            const wrapper = JSON.parse(line);
+            if (wrapper && wrapper.event === 'message' && wrapper.message) {
+              const ev = JSON.parse(wrapper.message);
+              if (ingestEvent(ev, false)) changed = true;
+            }
+          } catch (err) {}
+        });
+        state.syncStatus = 'live';
+        if (changed) {
+          refreshAllUI();
+        } else {
+          notifyStore();
+        }
+      } catch (e) {
+        if (state.syncStatus === 'connecting') state.syncStatus = 'local';
+        notifyStore();
+      }
+    }
+
+    function connectRealtimeStream() {
+      if (sseSource) {
+        try { sseSource.close(); } catch (e) {}
+        sseSource = null;
+      }
+
+      // 1. Load local events for today
+      cleanOldDateStorage(state.todayKey);
+      appliedEventIds.clear();
+      eventLog = [];
+      try {
+        const raw = localStorage.getItem(getLocalStorageKey(state.todayKey));
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(ev => {
+              if (ev && ev.eid && ev.dateKey === state.todayKey && !appliedEventIds.has(ev.eid)) {
+                appliedEventIds.add(ev.eid);
+                eventLog.push(ev);
+              }
+            });
+          }
+        }
+      } catch (e) {}
+      rebuildTrayFromEvents();
+      refreshAllUI();
+
+      // 2. Fetch cloud history & open SSE live stream
+      fetchCloudEventHistory();
+
+      if (typeof EventSource !== 'undefined') {
+        try {
+          const topic = getCloudTopic(state.todayKey);
+          sseSource = new EventSource(`https://ntfy.sh/${topic}/sse`);
+          sseSource.onopen = () => {
+            state.syncStatus = 'live';
+            notifyStore();
+          };
+          sseSource.onmessage = (msg) => {
+            try {
+              const data = JSON.parse(msg.data);
+              const ev = data && data.message ? JSON.parse(data.message) : data;
+              if (ingestEvent(ev, true)) {
+                if (ev.type === 'ADD' && ev.payload && ev.payload.userName !== state.userName) {
+                  const m = MENU_DATA.find(x => x.id === ev.payload.itemId);
+                  if (m) showToast(`🔔 <b>${ev.payload.userName}</b>님이 <b>${m.boardName}</b> 메뉴를 담았습니다!`);
+                }
+              }
+            } catch (err) {}
+          };
+          sseSource.onerror = () => {
+            // Keep polling fallback active
+          };
+        } catch (e) {}
+      }
+    }
+
+    if (bcChannel) {
+      bcChannel.onmessage = (e) => {
+        if (e && e.data) ingestEvent(e.data, true);
+      };
+    }
+
+    window.addEventListener('storage', (e) => {
+      if (e.key === getLocalStorageKey(state.todayKey) && e.newValue) {
+        try {
+          const arr = JSON.parse(e.newValue);
+          let changed = false;
+          if (Array.isArray(arr)) {
+            arr.forEach(ev => {
+              if (ingestEvent(ev, false)) changed = true;
+            });
+          }
+          if (changed) refreshAllUI();
+        } catch (err) {}
+      } else if (e.key === 'salaria_user_name') {
+        state.userName = (e.newValue || '').trim();
+        notifyStore();
+      }
+    });
+
+    // Periodic 1s clock for 17:00 deadline & midnight daily auto-reset
+    let lastPassed17State = getDeadlineInfo().passed17;
+    setInterval(() => {
+      const curDateKey = getKSTDateKey();
+      if (curDateKey !== state.todayKey) {
+        state.todayKey = curDateKey;
+        state.tray = [];
+        connectRealtimeStream();
+        showToast(`🌅 자정(00:00)이 지나 오늘(${curDateKey}) 주문판으로 자동 초기화되었습니다!`);
+        return;
+      }
+      const dl = getDeadlineInfo();
+      if (dl.passed17 !== lastPassed17State) {
+        lastPassed17State = dl.passed17;
+        refreshAllUI();
+        return;
+      }
+      const badgeEl = document.getElementById('liveDeadlineBadge');
+      if (badgeEl) {
+        badgeEl.textContent = dl.canOrder
+          ? `⏰ 17:00 마감 (${dl.remainStr})`
+          : `⛔ 금일 17:00 주문 마감됨 (현재 ${dl.timeStr})`;
+      }
+    }, 1000);
+
+    // Periodic 5s cloud sync fallback poll
+    setInterval(() => {
+      fetchCloudEventHistory();
+    }, 5000);
+
+    // =========================================================================
+    // User Name & Deadline Control Functions
+    // =========================================================================
+    function setUserName(name) {
+      const trimmed = (name || '').trim();
+      state.userName = trimmed;
+      try {
+        localStorage.setItem('salaria_user_name', trimmed);
+      } catch (e) {}
+      refreshAllUI();
+    }
+
+    function openNamePromptModal(pendingMenuId) {
+      state.pendingMenuId = pendingMenuId || null;
+      const modal = document.getElementById('namePromptModal');
+      const input = document.getElementById('modalNameInput');
+      if (input) input.value = state.userName || '';
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => { if (input) input.focus(); }, 50);
+    }
+
+    function closeNamePromptModal() {
+      state.pendingMenuId = null;
+      const modal = document.getElementById('namePromptModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+
+    function confirmNamePrompt() {
+      const input = document.getElementById('modalNameInput');
+      const val = (input ? input.value : '').trim();
+      if (!val) {
+        showToast('⚠️ 주문자 이름을 입력해주세요!');
+        if (input) input.focus();
+        return;
+      }
+      setUserName(val);
+      const pendingId = state.pendingMenuId;
+      closeNamePromptModal();
+      showToast(`👤 주문자 이름이 <b>${val}</b>(으)로 설정되었습니다.`);
+      if (pendingId) {
+        addToTray(pendingId);
+      }
+    }
+
+    function toggleOverrideDeadline() {
+      state.overrideDeadline = !state.overrideDeadline;
+      if (state.overrideDeadline) {
+        showToast('🔓 17시 마감 제한이 임시 해제되었습니다 (테스트/추가주문 모드)');
+      } else {
+        showToast('🔒 17시 마감 제한이 다시 활성화되었습니다.');
+      }
+      refreshAllUI();
+    }
+
+    function setBoardTab(tab) {
+      state.boardTab = tab;
+      notifyStore();
+    }
+
+    function toggleBoardExpanded() {
+      state.boardExpanded = !state.boardExpanded;
+      notifyStore();
+    }
 
     function setDeviceMode(mode) {
       state.deviceMode = mode;
@@ -591,8 +1033,7 @@
         if (btnViewCard) btnViewCard.textContent = '카드';
       }
 
-      render();
-      renderTray();
+      refreshAllUI();
     }
 
     function toggleMobileBanner() {
@@ -732,7 +1173,7 @@
             `}
             <div class="pt-2 flex justify-end gap-2">
               <button onclick="addToTray('${item.id}'); closeImageModal();" class="px-4 py-2 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-semibold hover:opacity-90 transition">
-                + 현재 옵션으로 담기
+                + 내 이름으로 담기
               </button>
               <button onclick="closeImageModal()" class="px-4 py-2 rounded-lg border border-[var(--border)] text-xs font-semibold hover:bg-[var(--secondary)] transition">
                 닫기
@@ -762,7 +1203,7 @@
       toastTimer = setTimeout(() => {
         el.classList.remove('opacity-100', 'translate-y-0');
         el.classList.add('opacity-0', '-translate-y-2');
-      }, 1600);
+      }, 2000);
     }
 
     function setCategory(cat) {
@@ -823,46 +1264,101 @@
       renderTray();
     }
 
+    // =========================================================================
+    // Cart / Group Order Actions (with Name & 17:00 Cutoff Validation)
+    // =========================================================================
     function addToTray(id, event) {
       if (event) event.stopPropagation();
+
+      const dl = getDeadlineInfo();
+      if (!dl.canOrder) {
+        showToast('⛔ 오후 5시(17:00)가 지나 오늘 주문이 마감되었습니다! (매일 17시 마감)');
+        return;
+      }
+
+      if (!state.userName) {
+        openNamePromptModal(id);
+        return;
+      }
+
       const item = MENU_DATA.find(m => m.id === id);
       if (!item) return;
       const effectivePrice = getItemEffectivePrice(item);
       const optionSummary = getItemOptionSummary(item);
-      const extraPrice = effectivePrice - item.price;
-      state.tray.push({
-        ...item,
+
+      dispatchOrderEvent('ADD', {
+        userName: state.userName,
+        itemId: item.id,
         effectivePrice,
-        extraPrice,
-        optionSummary,
-        groupKey: `${item.id}::${optionSummary}`,
-        trayId: Date.now() + Math.random()
+        optionSummary
       });
-      showToast(`✅ <b>${item.boardName}</b> 담김! (${formatPrice(effectivePrice)})`);
-      renderTray();
-      render();
+
+      showToast(`✅ <b>[${state.userName}]</b> ${item.boardName} 담김! (${formatPrice(effectivePrice)})`);
     }
 
-    function removeFromTray(trayId) {
-      state.tray = state.tray.filter(i => i.trayId !== trayId);
-      renderTray();
-      if (!document.getElementById('receiptModal').classList.contains('hidden')) {
-        renderReceiptModal();
+    function changeGroupQty(groupKey, delta) {
+      const dl = getDeadlineInfo();
+      if (!dl.canOrder) {
+        showToast('⛔ 오후 5시(17:00) 이후에는 수량을 변경할 수 없습니다!');
+        return;
       }
+
+      const sampleItem = state.tray.find(i => i.groupKey === groupKey);
+      dispatchOrderEvent('DELTA_GROUP', {
+        groupKey,
+        delta,
+        sample: sampleItem ? {
+          userName: sampleItem.userName,
+          itemId: sampleItem.id,
+          effectivePrice: sampleItem.effectivePrice,
+          optionSummary: sampleItem.optionSummary
+        } : null
+      });
+    }
+
+    function clearMyTray() {
+      const dl = getDeadlineInfo();
+      if (!dl.canOrder) {
+        showToast('⛔ 오후 5시(17:00) 이후에는 주문을 수정할 수 없습니다!');
+        return;
+      }
+      if (!state.userName) {
+        showToast('⚠️ 먼저 주문자 이름을 입력해주세요.');
+        return;
+      }
+      dispatchOrderEvent('CLEAR_USER', { userName: state.userName });
+      showToast(`🗑️ <b>${state.userName}</b>님의 주문 내역을 비웠습니다.`);
+    }
+
+    function clearUserOrdersByName(targetName) {
+      const dl = getDeadlineInfo();
+      if (!dl.canOrder) {
+        showToast('⛔ 오후 5시(17:00) 이후에는 주문을 삭제할 수 없습니다!');
+        return;
+      }
+      dispatchOrderEvent('CLEAR_USER', { userName: targetName });
+      showToast(`🗑️ <b>${targetName}</b>님의 주문 내역을 삭제했습니다.`);
     }
 
     function clearTray() {
-      state.tray = [];
-      renderTray();
-      if (!document.getElementById('receiptModal').classList.contains('hidden')) {
-        renderReceiptModal();
+      const dl = getDeadlineInfo();
+      if (!dl.canOrder) {
+        showToast('⛔ 오후 5시(17:00) 이후에는 전체 초기화를 할 수 없습니다!');
+        return;
       }
+      dispatchOrderEvent('CLEAR_ALL', {});
+      showToast('🗑️ 오늘 전체 장바구니가 초기화되었습니다.');
     }
 
-    function getGroupedTray() {
+    // Group by (userName + itemId + optionSummary)
+    function getGroupedTray(scope = 'all') {
       const map = new Map();
-      state.tray.forEach(item => {
-        const key = item.groupKey || `${item.id}::${item.optionSummary}`;
+      const source = scope === 'mine' && state.userName
+        ? state.tray.filter(i => i.userName === state.userName)
+        : state.tray;
+
+      source.forEach(item => {
+        const key = item.groupKey || `${item.userName || '익명'}::${item.id}::${item.optionSummary}`;
         if (!map.has(key)) {
           map.set(key, { ...item, groupKey: key, qty: 1 });
         } else {
@@ -872,27 +1368,89 @@
       return Array.from(map.values());
     }
 
-    function changeGroupQty(groupKey, delta) {
-      if (delta > 0) {
-        const sample = state.tray.find(i => (i.groupKey || `${i.id}::${i.optionSummary}`) === groupKey);
-        if (sample) {
-          state.tray.push({ ...sample, trayId: Date.now() + Math.random() });
+    // Group by Person: returns [{ userName, items: [...], totalQty, totalPrice, totalKcal, totalProtein }]
+    function getOrdersByPerson() {
+      const grouped = getGroupedTray('all');
+      const personMap = new Map();
+      grouped.forEach(g => {
+        const u = g.userName || '익명';
+        if (!personMap.has(u)) {
+          personMap.set(u, {
+            userName: u,
+            items: [],
+            totalQty: 0,
+            totalPrice: 0,
+            totalKcal: 0,
+            totalProtein: 0
+          });
         }
-      } else if (delta < 0) {
-        for (let i = state.tray.length - 1; i >= 0; i--) {
-          const k = state.tray[i].groupKey || `${state.tray[i].id}::${state.tray[i].optionSummary}`;
-          if (k === groupKey) {
-            state.tray.splice(i, 1);
-            break;
-          }
+        const p = personMap.get(u);
+        p.items.push(g);
+        p.totalQty += g.qty;
+        p.totalPrice += g.effectivePrice * g.qty;
+        if (g.hasNutrition) {
+          p.totalKcal += g.kcal * g.qty;
+          p.totalProtein += g.protein * g.qty;
         }
-      }
-      renderTray();
-      renderReceiptModal();
+      });
+      return Array.from(personMap.values());
+    }
+
+    // Group by Menu + Option across all users: returns [{ menuKey, item, optionSummary, totalQty, totalPrice, users: [{ userName, qty, groupKey }] }]
+    function getOrdersByMenu() {
+      const grouped = getGroupedTray('all');
+      const menuMap = new Map();
+      grouped.forEach(g => {
+        const mKey = `${g.id}::${g.optionSummary || ''}`;
+        if (!menuMap.has(mKey)) {
+          menuMap.set(mKey, {
+            menuKey: mKey,
+            id: g.id,
+            boardName: g.boardName,
+            fullName: g.fullName,
+            category: g.category,
+            effectivePrice: g.effectivePrice,
+            optionSummary: g.optionSummary,
+            hasNutrition: g.hasNutrition,
+            kcal: g.kcal,
+            protein: g.protein,
+            totalQty: 0,
+            totalPrice: 0,
+            users: []
+          });
+        }
+        const entry = menuMap.get(mKey);
+        entry.totalQty += g.qty;
+        entry.totalPrice += g.effectivePrice * g.qty;
+        entry.users.push({ userName: g.userName || '익명', qty: g.qty, groupKey: g.groupKey });
+      });
+      return Array.from(menuMap.values());
+    }
+
+    // Get who ordered a specific menu item id (for displaying badge on menu cards)
+    function getItemOrderers(itemId) {
+      const map = new Map();
+      let totalQty = 0;
+      state.tray.forEach(t => {
+        if (t.id === itemId) {
+          const u = t.userName || '익명';
+          map.set(u, (map.get(u) || 0) + 1);
+          totalQty += 1;
+        }
+      });
+      return {
+        totalQty,
+        list: Array.from(map.entries()).map(([userName, qty]) => ({ userName, qty }))
+      };
     }
 
     function setOrderType(type) {
       state.orderType = type;
+      renderReceiptModal();
+    }
+
+    function setReceiptScope(scope) {
+      state.receiptScope = scope;
       renderReceiptModal();
     }
 
@@ -911,16 +1469,20 @@
 
     function renderReceiptModal() {
       const content = document.getElementById('receiptModalContent');
-      const grouped = getGroupedTray();
-      const now = new Date();
-      const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      if (!content) return;
+      const scope = state.receiptScope || 'all';
+      const grouped = getGroupedTray(scope);
+      const byPerson = getOrdersByPerson();
+      const byMenu = getOrdersByMenu();
+      const kst = getKSTNow();
+      const dateStr = `${state.todayKey} ${String(kst.getHours()).padStart(2, '0')}:${String(kst.getMinutes()).padStart(2, '0')}`;
 
-      if (grouped.length === 0) {
+      if (state.tray.length === 0) {
         content.innerHTML = `
           <div class="text-center py-8 space-y-3">
             <div class="text-3xl">🧾</div>
-            <div class="font-bold text-base text-slate-800">아직 담긴 메뉴가 없습니다</div>
-            <p class="text-xs text-slate-500">메뉴 카드를 클릭하여 식단을 담으면<br/>실물 영수증과 총 영양성분표가 출력됩니다.</p>
+            <div class="font-bold text-base text-slate-800">오늘 담긴 단체 주문 메뉴가 없습니다</div>
+            <p class="text-xs text-slate-500">내 이름을 입력하고 메뉴를 담으면<br/>누가 시켰는지 포함된 실물 영수증이 출력됩니다.</p>
             <button onclick="closeReceiptModal()" class="mt-2 px-4 py-2 rounded-lg bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition">
               메뉴 담으러 가기
             </button>
@@ -929,7 +1491,11 @@
         return;
       }
 
-      const totals = state.tray.reduce((acc, cur) => {
+      const sourceTray = scope === 'mine' && state.userName
+        ? state.tray.filter(i => i.userName === state.userName)
+        : state.tray;
+
+      const totals = sourceTray.reduce((acc, cur) => {
         acc.basePrice += cur.price;
         acc.extraPrice += (cur.extraPrice || (cur.effectivePrice - cur.price));
         acc.totalPrice += cur.effectivePrice;
@@ -953,7 +1519,6 @@
       const protPer1k = totals.totalPrice > 0 ? (totals.protein / (totals.totalPrice / 1000)).toFixed(1) : '0.0';
       const protPer100kcal = totals.kcal > 0 ? ((totals.protein / totals.kcal) * 100).toFixed(1) : '0.0';
 
-      // Daily value percentages (Korean standard 2,000kcal reference)
       const pctProtein = Math.min(100, Math.round((totals.protein / 55) * 100));
       const pctCarbs = Math.min(100, Math.round((totals.carbs / 324) * 100));
       const pctSugar = Math.min(100, Math.round((totals.sugar / 100) * 100));
@@ -961,34 +1526,62 @@
       const pctSodium = Math.min(100, Math.round((totals.sodium / 2000) * 100));
 
       content.innerHTML = `
-        <!-- Top Action Bar (Close) -->
-        <div class="flex items-center justify-between border-b border-dashed border-slate-300 pb-3 no-print">
+        <!-- Top Action Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-dashed border-slate-300 pb-3 no-print">
           <div class="inline-flex rounded-md border border-slate-300 p-0.5 bg-slate-100 text-xs">
-            <button onclick="setOrderType('매장식사')" class="px-2.5 py-1 rounded font-bold transition ${state.orderType === '매장식사' ? 'bg-emerald-600 text-white' : 'text-slate-600'}">매장식사</button>
-            <button onclick="setOrderType('포장주문')" class="px-2.5 py-1 rounded font-bold transition ${state.orderType === '포장주문' ? 'bg-emerald-600 text-white' : 'text-slate-600'}">포장주문</button>
+            <button onclick="setReceiptScope('all')" class="px-2 py-1 rounded font-bold transition ${scope === 'all' ? 'bg-slate-900 text-white' : 'text-slate-600'}">👥 전체 단체(${state.tray.length})</button>
+            <button onclick="setReceiptScope('mine')" class="px-2 py-1 rounded font-bold transition ${scope === 'mine' ? 'bg-slate-900 text-white' : 'text-slate-600'}">👤 내 주문만</button>
           </div>
-          <button onclick="closeReceiptModal()" class="text-xs font-bold text-slate-500 hover:text-slate-800 px-2 py-1">✕ 닫기</button>
+          <div class="inline-flex rounded-md border border-slate-300 p-0.5 bg-slate-100 text-xs">
+            <button onclick="setOrderType('매장식사')" class="px-2 py-1 rounded font-bold transition ${state.orderType === '매장식사' ? 'bg-emerald-600 text-white' : 'text-slate-600'}">매장</button>
+            <button onclick="setOrderType('포장주문')" class="px-2 py-1 rounded font-bold transition ${state.orderType === '포장주문' ? 'bg-emerald-600 text-white' : 'text-slate-600'}">포장</button>
+          </div>
+          <button onclick="closeReceiptModal()" class="text-xs font-bold text-slate-500 hover:text-slate-800 px-1.5 py-1">✕ 닫기</button>
         </div>
 
         <!-- Receipt Header -->
         <div class="text-center space-y-1 pt-1">
-          <div class="text-xs font-bold tracking-widest text-emerald-700">FRESH & HEALTHY</div>
+          <div class="text-xs font-bold tracking-widest text-emerald-700">FRESH & HEALTHY · GROUP ORDER</div>
           <h2 class="text-2xl font-black tracking-tight text-slate-900">SALARIA 샐러리아</h2>
-          <p class="text-xs text-slate-500">영양성분 & 주문 내역 영수증</p>
+          <p class="text-xs text-slate-500">${scope === 'all' ? `단체 주문서 & 영양 영수증 (참여 ${byPerson.length}명)` : `${state.userName || '내'} 주문 & 영양 영수증`}</p>
           <div class="inline-block mt-1 px-3 py-0.5 rounded border border-slate-800 text-xs font-extrabold text-slate-900">
-            [${state.orderType}] 주문번호 #${state.orderNo}
+            [${state.orderType}] ${state.todayKey} (#${state.orderNo})
           </div>
         </div>
 
         <div class="text-xs text-slate-600 border-t border-b border-dashed border-slate-400 py-2 space-y-0.5">
-          <div class="flex justify-between"><span>발행일시:</span><span>${dateStr}</span></div>
-          <div class="flex justify-between"><span>품목수량:</span><span>${grouped.length}종 (총 ${state.tray.length}개)</span></div>
+          <div class="flex justify-between"><span>주문일자(일별초기화):</span><span>${dateStr} (17:00 마감)</span></div>
+          <div class="flex justify-between"><span>주문자 명단:</span><span class="font-bold text-slate-900">${byPerson.map(p => `${p.userName}(${p.totalQty})`).join(', ')}</span></div>
         </div>
 
-        <!-- Ordered Items Table -->
+        ${scope === 'all' ? `
+          <!-- Section 1: Menu Aggregated Summary for Store Ordering -->
+          <div class="space-y-2 bg-slate-100/80 p-2.5 rounded-lg border border-slate-300">
+            <div class="text-xs font-black text-slate-900 border-b border-slate-400 pb-1 flex justify-between">
+              <span>🍱 [가게 주문용] 메뉴별 합산표</span>
+              <span>총 ${sourceTray.length}개</span>
+            </div>
+            <div class="space-y-1.5 divide-y divide-dashed divide-slate-300">
+              ${byMenu.map((m, idx) => `
+                <div class="${idx > 0 ? 'pt-1.5' : ''} text-xs">
+                  <div class="flex justify-between font-bold text-slate-900">
+                    <span>${idx + 1}. ${m.fullName} ${m.optionSummary ? `<span class="text-emerald-800">[${m.optionSummary}]</span>` : ''}</span>
+                    <span class="shrink-0 ml-2 font-black text-emerald-700">x${m.totalQty}개</span>
+                  </div>
+                  <div class="text-xs text-slate-600 flex justify-between mt-0.5">
+                    <span>👤 주문자: <b>${m.users.map(u => `${u.userName}${u.qty > 1 ? `(${u.qty})` : ''}`).join(', ')}</b></span>
+                    <span>${formatPrice(m.totalPrice)}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+
+        <!-- Section 2: Detailed Items with Person Name -->
         <div class="space-y-2.5">
           <div class="flex justify-between text-xs font-bold text-slate-700 border-b border-slate-800 pb-1">
-            <span>메뉴 / 선택옵션</span>
+            <span>주문자 · 메뉴 / 선택옵션</span>
             <div class="flex gap-4">
               <span>수량</span>
               <span class="w-16 text-right">금액</span>
@@ -1002,7 +1595,8 @@
                 <div class="${idx > 0 ? 'pt-2.5' : ''} space-y-1 text-xs">
                   <div class="flex items-start justify-between gap-2">
                     <div class="font-bold text-slate-900 leading-snug">
-                      ${idx + 1}. ${g.fullName}
+                      <span class="inline-block px-1.5 py-0.2 rounded bg-emerald-700 text-white text-xs font-extrabold mr-1">👤 ${g.userName || '익명'}</span>
+                      ${g.fullName}
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                       <div class="inline-flex items-center border border-slate-300 rounded bg-white no-print">
@@ -1022,7 +1616,7 @@
                     </div>
                   ` : ''}
                   <div class="text-xs text-slate-500 pl-3 flex justify-between">
-                    <span>${g.hasNutrition ? `열량 ${g.kcal * g.qty}kcal · 단백질 ${g.protein * g.qty}g · 탄수 ${g.carbs * g.qty}g · 지방 ${g.fat * g.qty}g` : '영양성분표 미제공 품목'}</span>
+                    <span>${g.hasNutrition ? `열량 ${g.kcal * g.qty}kcal · 단백질 ${g.protein * g.qty}g` : '영양성분표 미제공 품목'}</span>
                     <span>(단가 ${g.effectivePrice.toLocaleString('ko-KR')}원)</span>
                   </div>
                 </div>
@@ -1067,7 +1661,6 @@
           </div>
 
           <div class="space-y-1.5 text-xs pt-1">
-            <!-- Protein -->
             <div>
               <div class="flex justify-between font-bold text-slate-900">
                 <span>💪 총 단백질 (Protein)</span>
@@ -1077,8 +1670,6 @@
                 <div class="h-full bg-emerald-600 rounded-full" style="width: ${pctProtein}%"></div>
               </div>
             </div>
-
-            <!-- Carbs -->
             <div>
               <div class="flex justify-between font-semibold text-slate-800">
                 <span>🍚 총 탄수화물 (Carbs)</span>
@@ -1088,8 +1679,6 @@
                 <div class="h-full bg-slate-700 rounded-full" style="width: ${pctCarbs}%"></div>
               </div>
             </div>
-
-            <!-- Sugar -->
             <div>
               <div class="flex justify-between font-semibold text-slate-800">
                 <span>🍬 총 당류 (Sugars)</span>
@@ -1099,8 +1688,6 @@
                 <div class="h-full bg-amber-500 rounded-full" style="width: ${pctSugar}%"></div>
               </div>
             </div>
-
-            <!-- Fat -->
             <div>
               <div class="flex justify-between font-semibold text-slate-800">
                 <span>🥑 총 지방 (Fat)</span>
@@ -1110,8 +1697,6 @@
                 <div class="h-full bg-rose-500 rounded-full" style="width: ${pctFat}%"></div>
               </div>
             </div>
-
-            <!-- Sodium -->
             <div>
               <div class="flex justify-between font-semibold text-slate-800">
                 <span>🧂 총 나트륨 (Sodium)</span>
@@ -1127,11 +1712,6 @@
             <span>⚡ 1천원당 단백질: <b>${protPer1k}g</b></span>
             <span>🎯 100kcal당 단백질: <b>${protPer100kcal}g</b></span>
           </div>
-          ${totals.noNutriItems > 0 ? `
-            <div class="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded">
-              ※ 영양성분 미제공 메뉴 ${totals.noNutriItems}개는 칼로리·영양 합산에서 제외되었습니다.
-            </div>
-          ` : ''}
         </div>
 
         <!-- Barcode & Footer -->
@@ -1149,7 +1729,7 @@
             onclick="copyReceiptText()"
             class="py-2.5 px-3 rounded-lg bg-slate-900 text-white text-xs font-bold hover:bg-slate-800 transition flex items-center justify-center gap-1.5"
           >
-            <span>📋 텍스트 영수증 복사</span>
+            <span>📋 단체 주문서 복사</span>
           </button>
           <button
             onclick="window.print()"
@@ -1162,58 +1742,309 @@
     }
 
     function copyReceiptText() {
-      const grouped = getGroupedTray();
-      if (grouped.length === 0) return;
+      const byPerson = getOrdersByPerson();
+      const byMenu = getOrdersByMenu();
+      if (byMenu.length === 0) {
+        showToast('⚠️ 아직 담긴 주문이 없습니다.');
+        return;
+      }
 
-      const totals = state.tray.reduce((acc, cur) => {
-        acc.totalPrice += cur.effectivePrice;
-        if (cur.hasNutrition) {
-          acc.kcal += cur.kcal;
-          acc.protein += cur.protein;
-          acc.carbs += cur.carbs;
-          acc.sugar += cur.sugar;
-          acc.fat += cur.fat;
-          acc.sodium += cur.sodium;
-        }
-        return acc;
-      }, { totalPrice: 0, kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, sodium: 0 });
-
+      const totalAmount = state.tray.reduce((s, i) => s + i.effectivePrice, 0);
       const lines = [
         `========================`,
-        `   [SALARIA 샐러리아]   `,
-        `   주문 & 영양 영수증   `,
+        `🥗 [샐러리아 단체 주문서]`,
+        `📅 일자: ${state.todayKey} (${state.orderType})`,
+        `👥 참여: ${byPerson.length}명 / 총 ${state.tray.length}개`,
         `========================`,
-        `구분: ${state.orderType} (#${state.orderNo})`,
-        `------------------------`
+        `[1. 메뉴별 취합 (가게 주문용)]`
       ];
 
-      grouped.forEach((g, idx) => {
-        lines.push(`${idx + 1}. ${g.fullName} x${g.qty} (${(g.effectivePrice * g.qty).toLocaleString('ko-KR')}원)`);
-        if (g.optionSummary) lines.push(`   └ 옵션: ${g.optionSummary}`);
-        if (g.hasNutrition) lines.push(`   └ ${g.kcal * g.qty}kcal | 단백질 ${g.protein * g.qty}g`);
+      byMenu.forEach((m, idx) => {
+        lines.push(`${idx + 1}. ${m.fullName}${m.optionSummary ? ` [${m.optionSummary}]` : ''} — ${m.totalQty}개 (${formatPrice(m.totalPrice)})`);
+        lines.push(`   └ 주문자: ${m.users.map(u => `${u.userName}${u.qty > 1 ? `x${u.qty}` : ''}`).join(', ')}`);
       });
 
       lines.push(`------------------------`);
-      lines.push(`총 결제금액: ${formatPrice(totals.totalPrice)}`);
-      lines.push(`------------------------`);
-      lines.push(`[총 영양성분 합계]`);
-      lines.push(`• 열량: ${totals.kcal} kcal`);
-      lines.push(`• 단백질: ${totals.protein} g`);
-      lines.push(`• 탄수화물: ${totals.carbs} g`);
-      lines.push(`• 당류: ${totals.sugar} g`);
-      lines.push(`• 지방: ${totals.fat} g`);
-      lines.push(`• 나트륨: ${totals.sodium} mg`);
+      lines.push(`[2. 사람별 주문 내역]`);
+      byPerson.forEach(p => {
+        lines.push(`👤 ${p.userName} (${p.totalQty}개 · ${formatPrice(p.totalPrice)})`);
+        p.items.forEach(it => {
+          lines.push(`  • ${it.fullName}${it.optionSummary ? ` (${it.optionSummary})` : ''} x${it.qty}`);
+        });
+      });
+
+      lines.push(`========================`);
+      lines.push(`💰 총 결제 합계: ${formatPrice(totalAmount)}`);
       lines.push(`========================`);
 
       navigator.clipboard.writeText(lines.join('\n')).then(() => {
+        showToast('📋 단체 주문서(메뉴별+사람별)가 클립보드에 복사되었습니다!');
         const btn = document.getElementById('btnCopyReceipt');
         if (btn) {
           const orig = btn.innerHTML;
-          btn.innerHTML = `<span>✅ 클립보드 복사 완료!</span>`;
+          btn.innerHTML = `<span>✅ 복사 완료!</span>`;
           setTimeout(() => { btn.innerHTML = orig; }, 2000);
         }
       });
     }
+
+    // =========================================================================
+    // React 18 Live Group Order Board Component (with seamless fallback)
+    // =========================================================================
+    function renderLiveGroupBoardHTML() {
+      const dl = getDeadlineInfo();
+      const byPerson = getOrdersByPerson();
+      const byMenu = getOrdersByMenu();
+      const totalAmount = state.tray.reduce((s, i) => s + i.effectivePrice, 0);
+      const totalKcal = state.tray.reduce((s, i) => s + (i.hasNutrition ? i.kcal : 0), 0);
+      const totalProt = state.tray.reduce((s, i) => s + (i.hasNutrition ? i.protein : 0), 0);
+
+      return `
+        <div class="bg-[var(--card)] border-2 border-[var(--primary)]/60 rounded-2xl p-3 sm:p-4 shadow-md space-y-3">
+          <!-- Row 1: Date, Daily Reset Info & 17:00 Deadline Countdown -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border)]">
+            <div class="flex flex-wrap items-center gap-1.5">
+              <span class="px-2.5 py-1 rounded-lg bg-[var(--secondary)] text-[var(--foreground)] text-xs font-extrabold flex items-center gap-1">
+                📅 ${state.todayKey} 주문판 <span class="text-[var(--muted-foreground)] font-medium">(매일 00시 자동 초기화)</span>
+              </span>
+              <span
+                id="liveDeadlineBadge"
+                class="px-2.5 py-1 rounded-lg text-xs font-extrabold flex items-center gap-1 ${
+                dl.canOrder
+                  ? 'bg-emerald-500/15 text-emerald-500 border border-emerald-500/30'
+                  : 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
+              }">
+                ${dl.canOrder
+                  ? `⏰ 17:00 마감 (${dl.remainStr})`
+                  : `⛔ 금일 17:00 주문 마감됨 (현재 ${dl.timeStr})`
+                }
+              </span>
+              ${dl.passed17 ? `
+                <button
+                  onclick="toggleOverrideDeadline()"
+                  class="px-2 py-0.5 rounded text-xs font-bold border border-[var(--border)] hover:bg-[var(--secondary)]"
+                >
+                  ${state.overrideDeadline ? '🔒 마감적용으로 복귀' : '🔓 마감시간 외 임시주문 허용'}
+                </button>
+              ` : ''}
+            </div>
+
+            <div class="flex items-center gap-1.5 text-xs">
+              <span class="text-[var(--muted-foreground)]">
+                ${state.syncStatus === 'live' ? '🟢 실시간 공유 서버 연결됨' : '🟡 실시간 로컬/브라우저 동기화중'}
+              </span>
+              <button
+                onclick="fetchCloudEventHistory(); showToast('🔄 최신 주문 내역을 동기화했습니다.');"
+                class="px-2 py-1 rounded-lg border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] font-bold text-xs"
+                title="실시간 수동 새로고침"
+              >
+                🔄 동기화
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 2: My Name Input Bar -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-[var(--secondary)]/60 p-2.5 rounded-xl border border-[var(--border)]">
+            <div class="flex items-center gap-2 flex-1">
+              <label for="userNameInput" class="text-xs sm:text-sm font-extrabold text-[var(--foreground)] whitespace-nowrap flex items-center gap-1">
+                <span>👤 내 이름:</span>
+              </label>
+              <input
+                id="userNameInput"
+                type="text"
+                value="${state.userName.replace(/"/g, '&quot;')}"
+                placeholder="주문자 이름 입력 (예: 홍길동)"
+                oninput="state.userName = this.value.trim(); localStorage.setItem('salaria_user_name', state.userName); const b = document.getElementById('currentOrdererBadge'); if (b) { b.textContent = state.userName ? state.userName + ' 님으로 담기 활성 ✓' : '이름을 먼저 입력해주세요'; b.className = 'text-xs font-bold px-2.5 py-1 rounded-full ' + (state.userName ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-amber-500/20 text-amber-500'); }"
+                onblur="notifyStore()"
+                class="flex-1 max-w-[220px] px-3 py-1.5 rounded-lg border-2 border-[var(--primary)] bg-[var(--background)] text-[var(--foreground)] text-xs sm:text-sm font-bold focus:outline-none"
+              />
+              <span
+                id="currentOrdererBadge"
+                class="text-xs font-bold px-2.5 py-1 rounded-full ${
+                  state.userName
+                    ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                    : 'bg-amber-500/20 text-amber-500'
+                }"
+              >
+                ${state.userName ? `${state.userName} 님으로 담기 활성 ✓` : '이름을 먼저 입력해주세요'}
+              </span>
+            </div>
+
+            <div class="flex items-center gap-1.5 self-end sm:self-auto">
+              <button
+                onclick="copyReceiptText()"
+                class="px-2.5 py-1.5 rounded-lg bg-[var(--background)] border border-[var(--border)] hover:bg-[var(--secondary)] text-xs font-bold transition"
+              >
+                📋 단체 주문서 복사
+              </button>
+              <button
+                onclick="openReceiptModal()"
+                class="px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold shadow-xs hover:opacity-90 transition"
+              >
+                🧾 전체 영수증 (${state.tray.length})
+              </button>
+            </div>
+          </div>
+
+          <!-- Row 3: Live Group Order Board (Who Ordered What) -->
+          <div class="space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs sm:text-sm font-extrabold text-[var(--foreground)]">
+                  📢 실시간 단체 주문 현황판
+                </span>
+                <span class="px-2 py-0.5 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] text-xs font-extrabold">
+                  참여 ${byPerson.length}명 · 총 ${state.tray.length}개 · ${formatPrice(totalAmount)}
+                </span>
+              </div>
+
+              <div class="flex items-center gap-1.5">
+                <div class="inline-flex rounded-lg border border-[var(--border)] bg-[var(--background)] p-0.5 text-xs">
+                  <button
+                    onclick="setBoardTab('byPerson')"
+                    class="px-2.5 py-1 rounded-md font-bold transition ${
+                      state.boardTab === 'byPerson'
+                        ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                        : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+                    }"
+                  >
+                    👥 사람별 (${byPerson.length}명)
+                  </button>
+                  <button
+                    onclick="setBoardTab('byMenu')"
+                    class="px-2.5 py-1 rounded-md font-bold transition ${
+                      state.boardTab === 'byMenu'
+                        ? 'bg-[var(--primary)] text-[var(--primary-foreground)]'
+                        : 'text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+                    }"
+                  >
+                    🍱 메뉴별 합산 (${byMenu.length}종)
+                  </button>
+                </div>
+                <button
+                  onclick="toggleBoardExpanded()"
+                  class="px-2 py-1 rounded-lg border border-[var(--border)] text-xs font-semibold hover:bg-[var(--secondary)]"
+                >
+                  ${state.boardExpanded ? '접기 ▲' : '펼치기 ▼'}
+                </button>
+              </div>
+            </div>
+
+            ${state.boardExpanded ? (
+              state.tray.length === 0 ? `
+                <div class="rounded-xl border border-dashed border-[var(--border)] bg-[var(--background)]/50 p-4 text-center text-xs text-[var(--muted-foreground)]">
+                  아직 오늘 담긴 주문이 없습니다. 위에서 <b>내 이름</b>을 적고 아래 메뉴의 <b>+ 담기</b> 버튼을 눌러보세요! (누가 시켰는지 실시간으로 여기에 표시됩니다)
+                </div>
+              ` : state.boardTab === 'byPerson' ? `
+                <!-- Grouped By Person View -->
+                <div class="grid grid-cols-1 ${state.deviceMode === 'pc' ? 'sm:grid-cols-2 lg:grid-cols-3' : ''} gap-2.5 pt-1">
+                  ${byPerson.map(person => {
+                    const isMe = state.userName && person.userName === state.userName;
+                    const safeUser = person.userName.replace(/'/g, "\\'");
+                    return `
+                      <div class="rounded-xl border ${isMe ? 'border-[var(--primary)] bg-[var(--primary)]/5' : 'border-[var(--border)] bg-[var(--background)]'} p-3 space-y-2">
+                        <div class="flex items-center justify-between gap-2 border-b border-[var(--border)] pb-1.5">
+                          <div class="flex items-center gap-1.5 min-w-0">
+                            <span class="px-2 py-0.5 rounded-full ${isMe ? 'bg-[var(--primary)] text-[var(--primary-foreground)]' : 'bg-[var(--secondary)] text-[var(--foreground)]'} text-xs font-extrabold truncate">
+                              👤 ${person.userName}${isMe ? ' (나)' : ''}
+                            </span>
+                            <span class="text-xs font-bold text-[var(--muted-foreground)]">${person.totalQty}개</span>
+                          </div>
+                          <div class="flex items-center gap-2 shrink-0">
+                            <span class="text-xs font-black text-[var(--primary)]">${formatPrice(person.totalPrice)}</span>
+                            ${dl.canOrder ? `
+                              <button
+                                onclick="clearUserOrdersByName('${safeUser}')"
+                                class="text-xs text-rose-500 hover:underline font-semibold"
+                                title="이 주문자 내역 전체 삭제"
+                              >
+                                삭제
+                              </button>
+                            ` : ''}
+                          </div>
+                        </div>
+
+                        <div class="space-y-1.5">
+                          ${person.items.map(it => {
+                            const safeKey = it.groupKey.replace(/'/g, "\\'");
+                            return `
+                              <div class="flex items-center justify-between gap-2 text-xs">
+                                <div class="min-w-0 flex-1">
+                                  <div class="font-bold text-[var(--foreground)] truncate">${it.boardName} <span class="text-[var(--muted-foreground)] font-normal">(${CATEGORY_META[it.category]?.name || ''})</span></div>
+                                  ${it.optionSummary ? `<div class="text-xs text-emerald-500 font-medium truncate">└ ${it.optionSummary}</div>` : ''}
+                                </div>
+                                <div class="flex items-center gap-1.5 shrink-0">
+                                  <span class="font-bold text-[var(--muted-foreground)]">${formatPrice(it.effectivePrice * it.qty)}</span>
+                                  ${dl.canOrder ? `
+                                    <div class="inline-flex items-center border border-[var(--border)] rounded bg-[var(--card)]">
+                                      <button onclick="changeGroupQty('${safeKey}', -1)" class="px-1.5 py-0.2 font-bold hover:bg-[var(--secondary)]">-</button>
+                                      <span class="px-1.5 font-extrabold">${it.qty}</span>
+                                      <button onclick="changeGroupQty('${safeKey}', 1)" class="px-1.5 py-0.2 font-bold hover:bg-[var(--secondary)]">+</button>
+                                    </div>
+                                  ` : `<span class="font-extrabold">x${it.qty}</span>`}
+                                </div>
+                              </div>
+                            `;
+                          }).join('')}
+                        </div>
+
+                        ${person.totalKcal > 0 ? `
+                          <div class="text-xs text-[var(--muted-foreground)] pt-1 border-t border-dashed border-[var(--border)] flex justify-between">
+                            <span>🔥 열량 ${person.totalKcal}kcal</span>
+                            <span>💪 단백질 <b class="text-emerald-500">${person.totalProtein}g</b></span>
+                          </div>
+                        ` : ''}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              ` : `
+                <!-- Grouped By Menu View (Aggregated across all people) -->
+                <div class="grid grid-cols-1 ${state.deviceMode === 'pc' ? 'sm:grid-cols-2' : ''} gap-2 pt-1">
+                  ${byMenu.map((m, idx) => `
+                    <div class="rounded-xl border border-[var(--border)] bg-[var(--background)] p-3 flex items-center justify-between gap-3">
+                      <div class="min-w-0 flex-1 space-y-1">
+                        <div class="flex items-center gap-1.5">
+                          <span class="text-xs px-1.5 py-0.2 rounded bg-[var(--secondary)] font-bold">${CATEGORY_META[m.category]?.icon || ''} ${CATEGORY_META[m.category]?.name || ''}</span>
+                          <span class="font-extrabold text-xs sm:text-sm text-[var(--foreground)] truncate">${idx + 1}. ${m.boardName}</span>
+                        </div>
+                        ${m.optionSummary ? `<div class="text-xs text-emerald-500 font-semibold">옵션: ${m.optionSummary}</div>` : ''}
+                        <div class="flex flex-wrap items-center gap-1 pt-0.5">
+                          <span class="text-xs text-[var(--muted-foreground)] font-semibold">주문자:</span>
+                          ${m.users.map(u => `
+                            <span class="px-2 py-0.2 rounded-full bg-[var(--primary)]/15 text-[var(--primary)] text-xs font-extrabold">
+                              👤 ${u.userName}${u.qty > 1 ? ` x${u.qty}` : ''}
+                            </span>
+                          `).join('')}
+                        </div>
+                      </div>
+                      <div class="text-right shrink-0">
+                        <div class="text-base font-black text-[var(--primary)]">총 ${m.totalQty}개</div>
+                        <div class="text-xs font-bold text-[var(--muted-foreground)]">${formatPrice(m.totalPrice)}</div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `
+            ) : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function updateLiveGroupBoardDOM() {
+      const rootEl = document.getElementById('reactLiveBoardRoot');
+      if (!rootEl) return;
+      // Preserve focus and cursor position if user is actively typing in #userNameInput
+      const activeEl = document.activeElement;
+      if (activeEl && activeEl.id === 'userNameInput') {
+        return;
+      }
+      rootEl.innerHTML = renderLiveGroupBoardHTML();
+    }
+
+    // Subscribe the Live Group Board to reactive store updates
+    subscribeStore(updateLiveGroupBoardDOM);
 
     function renderTray() {
       const trayEl = document.getElementById('mealTray');
@@ -1231,17 +2062,18 @@
       }
       trayEl.classList.remove('translate-y-full');
 
+      const byPerson = getOrdersByPerson();
       if (drawerEl && btnToggleEl) {
         if (state.trayDrawerOpen) {
           drawerEl.classList.remove('hidden');
           btnToggleEl.textContent = '닫기 ▼';
         } else {
           drawerEl.classList.add('hidden');
-          btnToggleEl.textContent = `목록(${state.tray.length}) ▲`;
+          btnToggleEl.textContent = `주문목록(${byPerson.length}명/${state.tray.length}개) ▲`;
         }
       }
 
-      const grouped = getGroupedTray();
+      const grouped = getGroupedTray('all');
       itemsEl.innerHTML = grouped.map(item => {
         const imgSrc = getImg(item.id);
         const catMeta = CATEGORY_META[item.category];
@@ -1250,8 +2082,11 @@
           <div class="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs font-medium shrink-0 border border-[var(--border)]">
             ${imgSrc ? `<img src="${imgSrc}" alt="${item.boardName}" class="w-8 h-8 rounded-lg object-cover bg-white shrink-0" />` : `<span class="text-base">${catMeta.icon}</span>`}
             <div class="min-w-0">
-              <div class="font-bold truncate max-w-[140px]">${item.boardName}</div>
-              ${item.optionSummary ? `<div class="text-xs text-[var(--muted-foreground)] truncate max-w-[140px]">${item.optionSummary}</div>` : ''}
+              <div class="flex items-center gap-1">
+                <span class="px-1.5 py-0.2 rounded bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold">👤 ${item.userName || '익명'}</span>
+                <span class="font-bold truncate max-w-[110px]">${item.boardName}</span>
+              </div>
+              ${item.optionSummary ? `<div class="text-xs text-[var(--muted-foreground)] truncate max-w-[160px]">${item.optionSummary}</div>` : ''}
               <div class="text-xs font-extrabold text-[var(--primary)]">${formatPrice(item.effectivePrice * item.qty)}</div>
             </div>
             <div class="inline-flex items-center border border-[var(--border)] rounded-lg bg-[var(--background)] ml-1">
@@ -1280,23 +2115,20 @@
       if (state.deviceMode === 'mobile') {
         totalsEl.innerHTML = `
           <div class="flex items-center gap-1.5">
-            <span class="px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold">${state.tray.length}개</span>
+            <span class="px-2 py-0.5 rounded-full bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold">👥 ${byPerson.length}명 · ${state.tray.length}개</span>
             <span class="font-black text-base text-[var(--foreground)]">${formatPrice(total.price)}</span>
           </div>
           <div class="text-xs text-[var(--muted-foreground)] truncate mt-0.5">
-            🔥 <b>${total.kcal}</b>kcal · 💪 단백질 <b class="text-emerald-500">${total.protein}g</b> · 탄 ${total.carbs}g · 지 ${total.fat}g
+            주문자: <b>${byPerson.map(p => p.userName).join(', ')}</b>
           </div>
         `;
       } else {
         totalsEl.innerHTML = `
           <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-            <span class="font-extrabold text-base text-[var(--primary)]">총 ${state.tray.length}개 · ${formatPrice(total.price)}</span>
-            <span class="px-2 py-0.5 rounded bg-[var(--secondary)] font-bold">🔥 ${total.kcal} kcal</span>
+            <span class="font-extrabold text-base text-[var(--primary)]">👥 ${byPerson.length}명 (${state.tray.length}개) · ${formatPrice(total.price)}</span>
+            <span class="px-2 py-0.5 rounded bg-[var(--secondary)] font-bold">주문자: ${byPerson.map(p => `${p.userName}(${p.totalQty})`).join(', ')}</span>
+            <span>🔥 <b>${total.kcal}kcal</b></span>
             <span>💪 단백질 <b class="text-emerald-500">${total.protein}g</b></span>
-            <span>탄수화물 <b>${total.carbs}g</b></span>
-            <span>당류 <b>${total.sugar}g</b></span>
-            <span>지방 <b>${total.fat}g</b></span>
-            <span>나트륨 <b>${total.sodium}mg</b></span>
           </div>
         `;
       }
@@ -1460,8 +2292,17 @@
       return list;
     }
 
-    function getItemTrayQty(id) {
-      return state.tray.filter(t => t.id === id).length;
+    function renderOrdererBadgeHTML(itemId) {
+      const info = getItemOrderers(itemId);
+      if (info.totalQty === 0) return '';
+      return `
+        <div class="mt-1.5 px-2 py-1 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/30 flex items-center justify-between gap-1 text-xs">
+          <span class="font-bold text-[var(--primary)] truncate">
+            👥 주문: ${info.list.map(u => `${u.userName}${u.qty > 1 ? `(${u.qty})` : ''}`).join(', ')}
+          </span>
+          <span class="font-extrabold text-[var(--primary)] shrink-0">총 ${info.totalQty}개</span>
+        </div>
+      `;
     }
 
     function renderOptionControls(item, compact = false) {
@@ -1566,6 +2407,7 @@
     function render() {
       renderCategoryTabs();
       const list = getFilteredData();
+      const dl = getDeadlineInfo();
       document.getElementById('resultCount').textContent = `${list.length}개`;
 
       const container = document.getElementById('menuContainer');
@@ -1580,11 +2422,14 @@
       }
 
       const isMobile = state.deviceMode === 'mobile';
+      const btnAddLabel = dl.canOrder ? '+ 담기' : '⛔ 17시마감';
+      const btnAddClass = dl.canOrder
+        ? 'bg-[var(--primary)] text-[var(--primary-foreground)] active:scale-95'
+        : 'bg-slate-400/50 text-[var(--muted-foreground)] cursor-not-allowed';
 
       // 1) MOBILE VERSION RENDERING
       if (isMobile) {
         if (state.viewMode === 'card') {
-          // Mobile 1-Column Delivery App Style List
           container.innerHTML = `
             <div class="space-y-2.5">
               ${list.map(item => {
@@ -1592,12 +2437,11 @@
                 const effPrice = getItemEffectivePrice(item);
                 const extraAdded = effPrice > item.price;
                 const imgSrc = getImg(item.id);
-                const qty = getItemTrayQty(item.id);
+                const ordererInfo = getItemOrderers(item.id);
 
                 return `
                   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 shadow-xs space-y-2">
                     <div class="flex items-start gap-3">
-                      <!-- Photo -->
                       <div class="relative shrink-0" onclick="openImageModal(event, '${item.id}')">
                         ${imgSrc ? `
                           <img src="${imgSrc}" alt="${item.fullName}" loading="lazy" class="w-20 h-20 rounded-xl object-cover border border-[var(--border)] bg-white" />
@@ -1610,7 +2454,6 @@
                         `}
                       </div>
 
-                      <!-- Info & Add Button -->
                       <div class="flex-1 min-w-0">
                         <div class="flex items-start justify-between gap-1.5">
                           <div class="min-w-0">
@@ -1621,10 +2464,10 @@
                           </div>
                           <button
                             onclick="addToTray('${item.id}', event)"
-                            class="px-3 py-1.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold shadow-xs active:scale-95 transition shrink-0 flex items-center gap-1"
+                            class="px-3 py-1.5 rounded-xl ${btnAddClass} text-xs font-extrabold shadow-xs transition shrink-0 flex items-center gap-1"
                           >
-                            <span>+ 담기</span>
-                            ${qty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${qty}</span>` : ''}
+                            <span>${btnAddLabel}</span>
+                            ${ordererInfo.totalQty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${ordererInfo.totalQty}</span>` : ''}
                           </button>
                         </div>
 
@@ -1648,6 +2491,7 @@
                       </div>
                     </div>
 
+                    ${renderOrdererBadgeHTML(item.id)}
                     ${renderOptionControls(item, false)}
                   </div>
                 `;
@@ -1655,14 +2499,13 @@
             </div>
           `;
         } else if (state.viewMode === 'compact') {
-          // Mobile 2-Column Photo Grid View
           container.innerHTML = `
             <div class="grid grid-cols-2 gap-2.5">
               ${list.map(item => {
                 const catMeta = CATEGORY_META[item.category];
                 const effPrice = getItemEffectivePrice(item);
                 const imgSrc = getImg(item.id);
-                const qty = getItemTrayQty(item.id);
+                const ordererInfo = getItemOrderers(item.id);
 
                 return `
                   <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-2.5 flex flex-col justify-between shadow-xs">
@@ -1691,15 +2534,16 @@
                         <span class="text-sm font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
                         <span class="text-xs text-[var(--muted-foreground)]">${item.hasNutrition ? `${item.kcal}kcal` : '성분미제공'}</span>
                       </div>
+                      ${renderOrdererBadgeHTML(item.id)}
                       ${renderOptionControls(item, true)}
                     </div>
 
                     <button
                       onclick="addToTray('${item.id}', event)"
-                      class="mt-2 w-full py-1.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold active:scale-95 transition flex items-center justify-center gap-1"
+                      class="mt-2 w-full py-1.5 rounded-xl ${btnAddClass} text-xs font-extrabold transition flex items-center justify-center gap-1"
                     >
-                      <span>+ 식단 담기</span>
-                      ${qty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${qty}</span>` : ''}
+                      <span>${btnAddLabel}</span>
+                      ${ordererInfo.totalQty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${ordererInfo.totalQty}</span>` : ''}
                     </button>
                   </div>
                 `;
@@ -1707,14 +2551,13 @@
             </div>
           `;
         } else {
-          // Mobile Compact Table View
           container.innerHTML = `
             <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-xs">
               <div class="overflow-x-auto custom-scroll">
                 <table class="w-full text-xs text-left">
                   <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] border-b border-[var(--border)]">
                     <tr>
-                      <th class="py-2.5 px-2.5">메뉴명</th>
+                      <th class="py-2.5 px-2.5">메뉴명 / 주문자</th>
                       <th class="py-2.5 px-2 text-right">가격</th>
                       <th class="py-2.5 px-2 text-right">열량</th>
                       <th class="py-2.5 px-2 text-right">단백질</th>
@@ -1725,17 +2568,19 @@
                     ${list.map(item => {
                       const effPrice = getItemEffectivePrice(item);
                       const optSummary = getItemOptionSummary(item);
+                      const ordererInfo = getItemOrderers(item.id);
                       return `
                         <tr onclick="addToTray('${item.id}', event)" class="hover:bg-[var(--secondary)] cursor-pointer">
                           <td class="py-2 px-2.5">
                             <div class="font-bold text-[var(--foreground)]">${item.boardName}</div>
                             ${optSummary ? `<div class="text-xs text-[var(--muted-foreground)]">${optSummary}</div>` : ''}
+                            ${ordererInfo.totalQty > 0 ? `<div class="text-xs text-[var(--primary)] font-bold">👥 ${ordererInfo.list.map(u => u.userName).join(', ')} (${ordererInfo.totalQty})</div>` : ''}
                           </td>
                           <td class="py-2 px-2 text-right font-bold text-[var(--primary)] whitespace-nowrap">${formatPrice(effPrice)}</td>
                           <td class="py-2 px-2 text-right">${item.hasNutrition ? `${item.kcal}` : '-'}</td>
                           <td class="py-2 px-2 text-right font-extrabold text-emerald-500">${item.hasNutrition ? `${item.protein}g` : '-'}</td>
                           <td class="py-2 px-2 text-center">
-                            <span class="px-2 py-1 rounded bg-[var(--primary)] text-[var(--primary-foreground)] font-bold">+</span>
+                            <span class="px-2 py-1 rounded ${btnAddClass} font-bold">${dl.canOrder ? '+' : '⛔'}</span>
                           </td>
                         </tr>
                       `;
@@ -1764,7 +2609,7 @@
               const imgSrc = getImg(item.id);
               const protPer1k = item.hasNutrition ? (item.protein / (effPrice / 1000)).toFixed(1) : null;
               const protPer100kcal = item.hasNutrition ? ((item.protein / item.kcal) * 100).toFixed(1) : null;
-              const qty = getItemTrayQty(item.id);
+              const ordererInfo = getItemOrderers(item.id);
 
               return `
                 <div
@@ -1796,9 +2641,9 @@
                           </span>
                           <button
                             onclick="addToTray('${item.id}', event)"
-                            class="px-2.5 py-1 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold shadow-xs hover:opacity-90 transition shrink-0"
+                            class="px-2.5 py-1 rounded-lg ${btnAddClass} text-xs font-bold shadow-xs hover:opacity-90 transition shrink-0"
                           >
-                            + 담기${qty > 0 ? ` (${qty})` : ''}
+                            ${btnAddLabel}${ordererInfo.totalQty > 0 ? ` (${ordererInfo.totalQty})` : ''}
                           </button>
                         </div>
                         <h3 class="font-bold text-base text-[var(--foreground)] group-hover:text-[var(--primary)] transition truncate">
@@ -1818,6 +2663,7 @@
                       </div>
                     </div>
 
+                    ${renderOrdererBadgeHTML(item.id)}
                     ${item.note && !item.fixedOption ? `<div class="mt-2 text-xs px-2 py-1 rounded bg-[var(--secondary)] text-[var(--muted-foreground)]">📌 ${item.note}</div>` : ''}
                     ${renderOptionControls(item, false)}
                   </div>
@@ -1856,7 +2702,7 @@
                   ` : `
                     <div class="pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
                       <span>📋 메뉴판 가격·옵션 등록 메뉴</span>
-                      <span class="font-semibold text-[var(--primary)]">+ 클릭하여 식단 담기</span>
+                      <span class="font-semibold text-[var(--primary)]">${dl.canOrder ? '+ 클릭하여 내 이름으로 담기' : '⛔ 17:00 주문 마감'}</span>
                     </div>
                   `}
                 </div>
@@ -1873,7 +2719,7 @@
                   <tr>
                     <th class="py-3 px-3">사진</th>
                     <th class="py-3 px-3">카테고리</th>
-                    <th class="py-3 px-3">메뉴명</th>
+                    <th class="py-3 px-3">메뉴명 / 실시간 주문자</th>
                     <th class="py-3 px-3">선택 옵션 (변경 가능)</th>
                     <th class="py-3 px-3 text-right">가격</th>
                     <th class="py-3 px-3 text-right">중량(g)</th>
@@ -1891,6 +2737,7 @@
                     const effPrice = getItemEffectivePrice(item);
                     const imgSrc = getImg(item.id);
                     const optSummary = getItemOptionSummary(item);
+                    const ordererInfo = getItemOrderers(item.id);
                     return `
                       <tr onclick="addToTray('${item.id}', event)" class="hover:bg-[var(--secondary)] cursor-pointer transition">
                         <td class="py-2 px-3">
@@ -1904,6 +2751,7 @@
                         <td class="py-2.5 px-3">
                           <div class="font-semibold text-[var(--foreground)]">${item.boardName}</div>
                           <div class="text-xs text-[var(--muted-foreground)]">${item.fullName}</div>
+                          ${ordererInfo.totalQty > 0 ? `<div class="text-xs text-[var(--primary)] font-bold mt-0.5">👥 주문: ${ordererInfo.list.map(u => `${u.userName}(${u.qty})`).join(', ')}</div>` : ''}
                         </td>
                         <td class="py-2.5 px-3 text-xs text-[var(--muted-foreground)]">${optSummary || '-'}</td>
                         <td class="py-2.5 px-3 text-right font-bold text-[var(--primary)] whitespace-nowrap">${formatPrice(effPrice)}</td>
@@ -1925,7 +2773,44 @@
       }
     }
 
+    function refreshAllUI() {
+      notifyStore();
+      render();
+      renderTray();
+      const receiptModal = document.getElementById('receiptModal');
+      if (receiptModal && !receiptModal.classList.contains('hidden')) {
+        renderReceiptModal();
+      }
+    }
+
+    // Mount React 18 Component if React is available (e.g. on GitHub Pages standalone deployment)
+    function initReactMountIfAvailable() {
+      if (window.React && window.ReactDOM && window.ReactDOM.createRoot) {
+        const rootContainer = document.getElementById('reactLiveBoardRoot');
+        if (!rootContainer) return;
+        const { useState, useEffect, createElement } = window.React;
+        function ReactLiveOrderBoard() {
+          const [, setTick] = useState(0);
+          useEffect(() => {
+            return subscribeStore(() => {
+              if (document.activeElement && document.activeElement.id === 'userNameInput') return;
+              setTick(t => t + 1);
+            });
+          }, []);
+          return createElement('div', {
+            dangerouslySetInnerHTML: { __html: renderLiveGroupBoardHTML() }
+          });
+        }
+        // Unsubscribe the direct DOM updater so React manages #reactLiveBoardRoot
+        storeListeners.delete(updateLiveGroupBoardDOM);
+        const root = window.ReactDOM.createRoot(rootContainer);
+        root.render(createElement(ReactLiveOrderBoard));
+      }
+    }
+
     setDeviceMode(state.deviceMode);
+    connectRealtimeStream();
+    initReactMountIfAvailable();
   </script>
 </body>
 </html>
