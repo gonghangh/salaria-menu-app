@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>샐러리아 메뉴판 전 메뉴 가격 · 옵션 · 영양성분 탐색기</title>
+  <title>샐러리아 실시간 단체주문</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <style>
@@ -37,9 +37,42 @@
     }
   </style>
   <style>
+    html {
+      font-size: 17.5px;
+    }
+    @media (min-width: 640px) {
+      html {
+        font-size: 18.5px;
+      }
+    }
+    /* Boost small text utilities so all labels, options, and names are large and easy to read */
+    .text-xs {
+      font-size: 0.92rem !important;
+      line-height: 1.38rem !important;
+    }
+    .text-sm {
+      font-size: 1.04rem !important;
+      line-height: 1.5rem !important;
+    }
+    .text-base {
+      font-size: 1.16rem !important;
+      line-height: 1.65rem !important;
+    }
+    .text-lg {
+      font-size: 1.32rem !important;
+      line-height: 1.8rem !important;
+    }
+    .text-xl {
+      font-size: 1.5rem !important;
+      line-height: 2rem !important;
+    }
+    .text-2xl {
+      font-size: 1.75rem !important;
+      line-height: 2.2rem !important;
+    }
     .custom-scroll::-webkit-scrollbar {
-      width: 5px;
-      height: 5px;
+      width: 6px;
+      height: 6px;
     }
     .custom-scroll::-webkit-scrollbar-thumb {
       background: var(--border);
@@ -61,7 +94,7 @@
     .receipt-paper {
       background: #fffdf9;
       color: #1e293b;
-      font-family: 'Courier New', Consolas, 'Pretendard', monospace, sans-serif;
+      font-family: 'Pretendard', 'Malgun Gothic', 'Courier New', Consolas, sans-serif;
       position: relative;
       box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
     }
@@ -95,57 +128,57 @@
     }
   </style>
 </head>
-<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen pb-32 transition-colors">
+<body class="bg-[var(--background)] text-[var(--foreground)] antialiased min-h-screen pb-36 transition-colors">
   <!-- Toast Notification -->
-  <div id="toastMsg" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-2 transition-all duration-200 bg-slate-900/95 text-white px-4 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 whitespace-nowrap">
+  <div id="toastMsg" class="fixed top-3 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 -translate-y-2 transition-all duration-200 bg-slate-900/95 text-white px-5 py-2.5 rounded-full text-sm font-extrabold shadow-lg flex items-center gap-2 whitespace-nowrap">
   </div>
 
-  <!-- App Shell (switches between max-w-7xl in PC mode and max-w-[460px] mobile app frame in Mobile mode) -->
+  <!-- App Shell (switches between max-w-7xl in PC mode and max-w-[480px] mobile app frame in Mobile mode) -->
   <div id="appShell" class="min-h-screen transition-all duration-200">
     <!-- Sticky Top App Bar & Category Tabs -->
     <div class="sticky top-0 z-30 bg-[var(--background)]/95 backdrop-blur-md border-b border-[var(--border)]">
-      <div id="headerInner" class="max-w-7xl mx-auto px-3 sm:px-6 pt-2.5 pb-2 space-y-2">
+      <div id="headerInner" class="max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2.5 space-y-2.5">
         <!-- Top Row: Title + PC/Mobile Version Switch + Receipt -->
         <div class="flex items-center justify-between gap-2 flex-wrap">
           <div class="min-w-0 flex items-center gap-2">
-            <span id="appTitle" class="text-base sm:text-xl font-extrabold tracking-tight text-[var(--foreground)] truncate">
-              🥗 샐러리아 실시간 단체주문 · 영양 탐색기
+            <span id="appTitle" class="text-lg sm:text-2xl font-black tracking-tight text-[var(--foreground)] truncate">
+              🥗 샐러리아 실시간 단체주문
             </span>
-            <span id="liveSyncBadge" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-500">
-              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="liveSyncBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-emerald-500/15 text-emerald-500">
+              <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>LIVE</span>
             </span>
           </div>
 
           <!-- Right Controls: Version Switch (PC <-> Mobile) + View Mode + Receipt -->
-          <div class="flex items-center gap-1.5 shrink-0 ml-auto">
+          <div class="flex items-center gap-1.5 shrink-0 ml-auto flex-wrap">
             <!-- PC / Mobile Version Switcher -->
-            <div class="inline-flex rounded-lg border-2 border-[var(--primary)] bg-[var(--card)] p-0.5 shadow-xs" title="PC 버전 / 모바일 버전 전환">
+            <div class="inline-flex rounded-xl border-2 border-[var(--primary)] bg-[var(--card)] p-0.5 shadow-xs" title="PC 버전 / 모바일 버전 전환">
               <button
                 id="btnModePC"
                 onclick="setDeviceMode('pc')"
-                class="px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1"
+                class="px-3 py-1.5 rounded-lg text-xs font-extrabold transition flex items-center gap-1"
               >
                 <span>🖥️ PC버전</span>
               </button>
               <button
                 id="btnModeMobile"
                 onclick="setDeviceMode('mobile')"
-                class="px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1"
+                class="px-3 py-1.5 rounded-lg text-xs font-extrabold transition flex items-center gap-1"
               >
                 <span>📱 모바일버전</span>
               </button>
             </div>
 
             <!-- Sub View Mode Toggle -->
-            <div class="inline-flex rounded-lg border border-[var(--border)] bg-[var(--card)] p-0.5">
-              <button id="btnViewCard" onclick="setViewMode('card')" class="px-2 py-1 rounded-md text-xs font-semibold transition bg-[var(--primary)] text-[var(--primary-foreground)]">
+            <div class="inline-flex rounded-xl border border-[var(--border)] bg-[var(--card)] p-0.5">
+              <button id="btnViewCard" onclick="setViewMode('card')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition bg-[var(--primary)] text-[var(--primary-foreground)]">
                 1열/카드
               </button>
-              <button id="btnViewCompact" onclick="setViewMode('compact')" class="px-2 py-1 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+              <button id="btnViewCompact" onclick="setViewMode('compact')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
                 2열
               </button>
-              <button id="btnViewTable" onclick="setViewMode('table')" class="px-2 py-1 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
+              <button id="btnViewTable" onclick="setViewMode('table')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]">
                 표
               </button>
             </div>
@@ -153,7 +186,7 @@
             <!-- Monthly Order History Button -->
             <button
               onclick="openMonthlyModal()"
-              class="px-2.5 py-1.5 rounded-lg border-2 border-[var(--primary)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--secondary)] text-xs font-extrabold shadow-sm active:scale-95 transition flex items-center gap-1"
+              class="px-3 py-1.5 rounded-xl border-2 border-[var(--primary)] bg-[var(--card)] text-[var(--foreground)] hover:bg-[var(--secondary)] text-xs font-extrabold shadow-sm active:scale-95 transition flex items-center gap-1"
               title="월별 최종 주문 명단 및 금액 정산 내역"
             >
               <span>📅 월별주문내역</span>
@@ -163,7 +196,7 @@
             <!-- Receipt Quick Button -->
             <button
               onclick="openReceiptModal()"
-              class="px-2.5 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-bold shadow-sm active:scale-95 transition flex items-center gap-1"
+              class="px-3 py-1.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-extrabold shadow-sm active:scale-95 transition flex items-center gap-1"
             >
               <span>🧾 영수증</span>
               <span id="headerReceiptCount" class="px-1.5 py-0.2 rounded-full bg-black/20 text-white text-xs">0</span>
@@ -172,56 +205,49 @@
         </div>
 
         <!-- Category Tabs -->
-        <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5" id="categoryTabs"></div>
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5" id="categoryTabs"></div>
       </div>
     </div>
 
-    <div id="mainInner" class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-3">
+    <div id="mainInner" class="max-w-7xl mx-auto px-3 sm:px-6 py-3 sm:py-5 space-y-3.5">
       <!-- React Live Group Order Board & User Name Input Bar -->
       <div id="reactLiveBoardRoot"></div>
 
       <!-- Category Option Info & Global Option Controls Banner -->
-      <div id="categoryBanner" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm">
+      <div id="categoryBanner" class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-sm">
       </div>
 
       <!-- Compact Controls: Search, Sort, Horizontal Quick Filters -->
-      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3 space-y-2.5 shadow-sm">
-        <div id="searchSortRow" class="flex flex-col sm:flex-row gap-2">
+      <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-3.5 space-y-2.5 shadow-sm">
+        <div id="searchSortRow" class="flex flex-col sm:flex-row gap-2.5">
           <!-- Search -->
           <div class="relative flex-1">
             <input
               id="searchInput"
               type="search"
-              placeholder="메뉴 검색 (닭가슴살, 연어, 부채살, 요거트...)"
+              placeholder="메뉴 검색 (닭가슴살, 연어, 부채살, 요거트, 죽...)"
               oninput="render()"
-              class="w-full pl-8 pr-8 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--placeholder)] text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              class="w-full pl-9 pr-8 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] placeholder-[var(--placeholder)] text-sm sm:text-base font-semibold focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             />
-            <svg class="w-4 h-4 text-[var(--muted-foreground)] absolute left-2.5 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-[var(--muted-foreground)] absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z" />
             </svg>
           </div>
 
           <!-- Sort + Reset Row -->
-          <div class="flex items-center gap-1.5">
+          <div class="flex items-center gap-2">
             <select
               id="sortSelect"
               onchange="render()"
-              class="flex-1 sm:w-56 px-2.5 py-2 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
+              class="flex-1 sm:w-56 px-3 py-2.5 rounded-xl border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-sm font-bold focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
             >
               <option value="default">정렬: 메뉴판 기본순</option>
               <option value="price_asc">💰 낮은 가격순</option>
               <option value="price_desc">💰 높은 가격순</option>
-              <option value="protein_desc">💪 높은 단백질순 (g)</option>
-              <option value="cal_asc">🔥 낮은 열량순 (kcal)</option>
-              <option value="cal_desc">🔥 높은 열량순 (kcal)</option>
-              <option value="protein_per_price">⚡ 가성비 단백질순 (1천원당 g)</option>
-              <option value="protein_per_cal">🎯 고밀도 단백질순 (100kcal당 g)</option>
-              <option value="sugar_asc">🍬 낮은 당류순 (g)</option>
-              <option value="sodium_asc">🧂 낮은 나트륨순 (mg)</option>
             </select>
             <button
               onclick="resetFilters()"
-              class="px-2.5 py-2 rounded-lg border border-[var(--border)] text-xs font-medium hover:bg-[var(--secondary)] shrink-0 transition"
+              class="px-3 py-2.5 rounded-xl border border-[var(--border)] text-xs sm:text-sm font-bold hover:bg-[var(--secondary)] shrink-0 transition"
               title="필터 초기화"
             >
               초기화
@@ -229,29 +255,20 @@
           </div>
         </div>
 
-        <!-- Horizontal Swipeable Quick Filter Chips -->
+        <!-- Horizontal Swipeable Quick Filter Chips (Price & Option based) -->
         <div class="flex items-center justify-between gap-2 pt-2 border-t border-[var(--border)]">
-          <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1 py-0.5">
-            <button onclick="toggleQuickFilter('onlyNutrition')" id="qf_onlyNutrition" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
-              📊 성분표보유(73)
+          <div class="flex items-center gap-2 overflow-x-auto no-scrollbar -mx-1 px-1 py-0.5">
+            <button onclick="toggleQuickFilter('under8k')" id="qf_under8k" class="px-3 py-1 rounded-full text-xs font-bold border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              💸 8천원 이하
             </button>
-            <button onclick="toggleQuickFilter('highProtein')" id="qf_highProtein" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
-              💪 고단백(30g↑)
+            <button onclick="toggleQuickFilter('under10k')" id="qf_under10k" class="px-3 py-1 rounded-full text-xs font-bold border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              💸 1만원 이하
             </button>
-            <button onclick="toggleQuickFilter('lowCal')" id="qf_lowCal" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
-              🥗 저칼로리(≤400)
-            </button>
-            <button onclick="toggleQuickFilter('lowSugar')" id="qf_lowSugar" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
-              🍬 저당(≤10g)
-            </button>
-            <button onclick="toggleQuickFilter('under10k')" id="qf_under10k" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
-              💸 1만원이하
-            </button>
-            <button onclick="toggleQuickFilter('lowSodium')" id="qf_lowSodium" class="px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition">
-              🧂 저나트륨(≤600)
+            <button onclick="toggleQuickFilter('wholeWheatAvail')" id="qf_wholeWheatAvail" class="px-3 py-1 rounded-full text-xs font-bold border border-[var(--border)] whitespace-nowrap shrink-0 transition">
+              🌾 통밀변경 가능 메뉴
             </button>
           </div>
-          <span id="resultCount" class="text-xs font-semibold text-[var(--muted-foreground)] whitespace-nowrap shrink-0 pl-1"></span>
+          <span id="resultCount" class="text-sm font-extrabold text-[var(--muted-foreground)] whitespace-nowrap shrink-0 pl-1"></span>
         </div>
       </div>
 
@@ -262,17 +279,17 @@
 
   <!-- Floating Meal Tray (Bottom Bar) -->
   <div id="mealTray" class="fixed bottom-0 inset-x-0 z-40 translate-y-full transition-transform duration-200 pointer-events-none">
-    <div id="mealTrayInner" class="max-w-7xl mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-3 sm:px-6 pt-2.5 pb-2 space-y-2 pointer-events-auto safe-bottom">
+    <div id="mealTrayInner" class="max-w-7xl mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-3 sm:px-6 pt-3 pb-2.5 space-y-2 pointer-events-auto safe-bottom">
       <!-- Expandable Tray Items Drawer -->
-      <div id="trayDrawer" class="hidden border-b border-[var(--border)] pb-2">
+      <div id="trayDrawer" class="hidden border-b border-[var(--border)] pb-2.5">
         <div class="flex items-center justify-between mb-1.5">
-          <span class="text-xs font-bold text-[var(--muted-foreground)]">실시간 장바구니 담긴 메뉴 (주문자 표시 · 신중한 삭제/수정 및 로그 기록)</span>
-          <div class="flex items-center gap-2">
-            <button onclick="clearMyTray()" class="text-xs text-amber-500 font-semibold hover:underline">내 주문만 비우기</button>
-            <button onclick="clearTray()" class="text-xs text-rose-500 font-semibold hover:underline">전체 초기화</button>
+          <span class="text-xs sm:text-sm font-extrabold text-[var(--muted-foreground)]">실시간 장바구니 담긴 메뉴 (주문자 표시 · 신중한 삭제/수정 및 로그 기록)</span>
+          <div class="flex items-center gap-3">
+            <button onclick="clearMyTray()" class="text-xs sm:text-sm text-amber-500 font-bold hover:underline">내 주문만 비우기</button>
+            <button onclick="clearTray()" class="text-xs sm:text-sm text-rose-500 font-bold hover:underline">전체 초기화</button>
           </div>
         </div>
-        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5" id="trayItems"></div>
+        <div class="flex items-center gap-2.5 overflow-x-auto no-scrollbar py-1" id="trayItems"></div>
       </div>
 
       <!-- Compact Summary Bar -->
@@ -280,14 +297,14 @@
         <div onclick="toggleTrayDrawer()" class="flex-1 min-w-0 cursor-pointer">
           <div id="trayTotals" class="truncate"></div>
         </div>
-        <div class="flex items-center gap-1.5 shrink-0">
-          <button onclick="toggleTrayDrawer()" id="btnTrayToggle" class="px-2.5 py-2 rounded-xl border border-[var(--border)] text-xs font-semibold hover:bg-[var(--secondary)]">
+        <div class="flex items-center gap-2 shrink-0">
+          <button onclick="toggleTrayDrawer()" id="btnTrayToggle" class="px-3 py-2 rounded-xl border border-[var(--border)] text-xs sm:text-sm font-bold hover:bg-[var(--secondary)]">
             목록 ▲
           </button>
-          <button onclick="finalizeTodayOrderPrompt()" class="px-3 py-2 rounded-xl bg-amber-500 text-white text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
+          <button onclick="finalizeTodayOrderPrompt()" class="px-3.5 py-2 rounded-xl bg-amber-500 text-white text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
             <span>✅ 최종주문확정</span>
           </button>
-          <button onclick="openReceiptModal()" class="px-3.5 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
+          <button onclick="openReceiptModal()" class="px-4 py-2 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-xs sm:text-sm font-extrabold shadow-md active:scale-95 transition flex items-center gap-1">
             <span>🧾 단체영수증</span>
           </button>
         </div>
@@ -658,16 +675,17 @@
       const s = kst.getSeconds();
       const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 
-      if (h >= 17) {
+      const passedDeadline = (h > 16) || (h === 16 && m >= 50);
+      if (passedDeadline) {
         return {
           passed17: true,
           canOrder: !!state.overrideDeadline,
           timeStr,
-          remainStr: '금일 17:00 마감 완료'
+          remainStr: '금일 16:50 마감 완료'
         };
       }
 
-      const targetSec = 17 * 3600;
+      const targetSec = 16 * 3600 + 50 * 60;
       const curSec = h * 3600 + m * 60 + s;
       const diff = Math.max(0, targetSec - curSec);
       const rh = String(Math.floor(diff / 3600)).padStart(2, '0');
@@ -715,12 +733,9 @@
       globalWholeWheat: false,
       mobileBannerOpen: false,
       quickFilters: {
-        onlyNutrition: false,
-        highProtein: false,
-        lowCal: false,
-        lowSugar: false,
+        under8k: false,
         under10k: false,
-        lowSodium: false
+        wholeWheatAvail: false
       },
       tray: [],
       auditLogs: [],
@@ -1171,7 +1186,7 @@
       }
     });
 
-    // Periodic 1s clock for 17:00 deadline & midnight daily auto-reset
+    // Periodic 1s clock for 16:50 deadline & midnight daily auto-reset
     let lastPassed17State = getDeadlineInfo().passed17;
     setInterval(() => {
       const curDateKey = getKSTDateKey();
@@ -1194,8 +1209,8 @@
       const badgeEl = document.getElementById('liveDeadlineBadge');
       if (badgeEl) {
         badgeEl.textContent = dl.canOrder
-          ? `⏰ 17:00 마감 (${dl.remainStr})`
-          : `⛔ 금일 17:00 주문 마감됨 (현재 ${dl.timeStr})`;
+          ? `⏰ 16:50 마감 (${dl.remainStr})`
+          : `⛔ 금일 16:50 주문 마감됨 (현재 ${dl.timeStr})`;
       }
     }, 1000);
 
@@ -1253,9 +1268,9 @@
     function toggleOverrideDeadline() {
       state.overrideDeadline = !state.overrideDeadline;
       if (state.overrideDeadline) {
-        showToast('🔓 17시 마감 제한이 임시 해제되었습니다 (테스트/추가주문 모드)');
+        showToast('🔓 오후 4시 50분(16:50) 마감 제한이 임시 해제되었습니다 (테스트/추가주문 모드)');
       } else {
-        showToast('🔒 17시 마감 제한이 다시 활성화되었습니다.');
+        showToast('🔒 오후 4시 50분(16:50) 마감 제한이 다시 활성화되었습니다.');
       }
       refreshAllUI();
     }
@@ -1278,11 +1293,11 @@
       const btnMobile = document.getElementById('btnModeMobile');
       if (btnPC && btnMobile) {
         btnPC.className = isMobile
-          ? 'px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
-          : 'px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs';
+          ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]'
+          : 'px-3 py-1.5 rounded-lg text-xs font-extrabold transition flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs';
         btnMobile.className = isMobile
-          ? 'px-2.5 py-1 rounded-md text-xs font-extrabold transition flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs'
-          : 'px-2.5 py-1 rounded-md text-xs font-bold transition flex items-center gap-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+          ? 'px-3 py-1.5 rounded-lg text-xs font-extrabold transition flex items-center gap-1 bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs'
+          : 'px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1 text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
       }
 
       const appShell = document.getElementById('appShell');
@@ -1293,18 +1308,18 @@
       const btnViewCard = document.getElementById('btnViewCard');
 
       if (isMobile) {
-        appShell.className = 'max-w-[460px] mx-auto min-h-screen border-x border-[var(--border)] shadow-2xl bg-[var(--background)] transition-all duration-200';
+        appShell.className = 'max-w-[480px] mx-auto min-h-screen border-x border-[var(--border)] shadow-2xl bg-[var(--background)] transition-all duration-200';
         headerInner.className = 'px-3 pt-2.5 pb-2 space-y-2';
-        mainInner.className = 'px-3 py-2.5 space-y-2.5';
-        mealTrayInner.className = 'max-w-[460px] mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-3 pt-2.5 pb-2 space-y-2 pointer-events-auto safe-bottom';
+        mainInner.className = 'px-3 py-3 space-y-3';
+        mealTrayInner.className = 'max-w-[480px] mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-3 pt-2.5 pb-2 space-y-2 pointer-events-auto safe-bottom';
         if (searchSortRow) searchSortRow.className = 'flex flex-col gap-2';
         if (btnViewCard) btnViewCard.textContent = '1열';
       } else {
         appShell.className = 'min-h-screen bg-[var(--background)] transition-all duration-200';
         headerInner.className = 'max-w-7xl mx-auto px-3 sm:px-6 pt-3 pb-2.5 space-y-2.5';
-        mainInner.className = 'max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-3.5';
+        mainInner.className = 'max-w-7xl mx-auto px-3 sm:px-6 py-4 space-y-4';
         mealTrayInner.className = 'max-w-7xl mx-auto bg-[var(--card)]/95 backdrop-blur-md border-t border-x border-[var(--border)] shadow-2xl px-4 sm:px-6 pt-3 pb-2.5 space-y-2 pointer-events-auto safe-bottom';
-        if (searchSortRow) searchSortRow.className = 'flex flex-col sm:flex-row gap-2';
+        if (searchSortRow) searchSortRow.className = 'flex flex-col sm:flex-row gap-2.5';
         if (btnViewCard) btnViewCard.textContent = '카드';
       }
 
@@ -1394,63 +1409,34 @@
       content.innerHTML = `
         <div class="flex flex-col sm:flex-row items-center gap-5">
           ${imgSrc ? `
-            <img src="${imgSrc}" alt="${item.fullName}" class="w-48 h-48 sm:w-52 sm:h-52 rounded-2xl object-cover border border-[var(--border)] bg-white shadow-md shrink-0" />
+            <img src="${imgSrc}" alt="${item.fullName}" class="w-52 h-52 sm:w-56 sm:h-56 rounded-2xl object-cover border border-[var(--border)] bg-white shadow-md shrink-0" />
           ` : `
-            <div class="w-48 h-48 sm:w-52 sm:h-52 rounded-2xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center shrink-0 text-center p-4">
+            <div class="w-52 h-52 sm:w-56 sm:h-56 rounded-2xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center shrink-0 text-center p-4">
               <span class="text-5xl mb-2">${catMeta.icon}</span>
-              <span class="text-xs text-[var(--muted-foreground)]">공식 이미지 미제공 메뉴</span>
+              <span class="text-sm font-bold text-[var(--muted-foreground)]">이미지 미제공 메뉴</span>
             </div>
           `}
           <div class="flex-1 space-y-3 text-left w-full">
             <div>
-              <span class="inline-block text-xs font-semibold px-2.5 py-0.5 rounded-full bg-[var(--secondary)] text-[var(--secondary-foreground)] mb-1">
-                ${catMeta.icon} ${catMeta.name} ${item.hasNutrition ? `· ${item.weight}g` : ''}
+              <span class="inline-block text-xs font-extrabold px-2.5 py-1 rounded-full bg-[var(--secondary)] text-[var(--secondary-foreground)] mb-1">
+                ${catMeta.icon} ${catMeta.name}
               </span>
-              <h3 class="text-xl font-bold text-[var(--foreground)]">${item.boardName}</h3>
-              <p class="text-xs text-[var(--muted-foreground)]">${item.fullName}</p>
+              <h3 class="text-xl sm:text-2xl font-black text-[var(--foreground)]">${item.boardName}</h3>
+              <p class="text-sm text-[var(--muted-foreground)] font-medium">${item.fullName}</p>
             </div>
             <div class="flex items-baseline gap-3">
-              <span class="text-2xl font-extrabold text-[var(--primary)]">${formatPrice(effPrice)}</span>
-              ${item.hasNutrition ? `<span class="text-sm font-semibold text-[var(--muted-foreground)]">${item.kcal} kcal</span>` : ''}
+              <span class="text-2xl font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
             </div>
             ${optSummary ? `
-              <div class="text-xs px-3 py-1.5 rounded-lg bg-[var(--secondary)] text-[var(--secondary-foreground)] font-medium">
+              <div class="text-sm px-3 py-2 rounded-xl bg-[var(--secondary)] text-[var(--secondary-foreground)] font-bold">
                 선택 옵션: <b>${optSummary}</b>
               </div>
             ` : ''}
-            ${item.hasNutrition ? `
-              <div class="grid grid-cols-5 gap-1.5 text-center pt-1">
-                <div class="bg-[var(--background)] rounded-lg p-2 border border-[var(--border)]">
-                  <div class="text-xs text-[var(--muted-foreground)]">단백질</div>
-                  <div class="text-sm font-bold text-emerald-500">${item.protein}g</div>
-                </div>
-                <div class="bg-[var(--background)] rounded-lg p-2 border border-[var(--border)]">
-                  <div class="text-xs text-[var(--muted-foreground)]">탄수화물</div>
-                  <div class="text-sm font-bold">${item.carbs}g</div>
-                </div>
-                <div class="bg-[var(--background)] rounded-lg p-2 border border-[var(--border)]">
-                  <div class="text-xs text-[var(--muted-foreground)]">당류</div>
-                  <div class="text-sm font-bold">${item.sugar}g</div>
-                </div>
-                <div class="bg-[var(--background)] rounded-lg p-2 border border-[var(--border)]">
-                  <div class="text-xs text-[var(--muted-foreground)]">지방</div>
-                  <div class="text-sm font-bold">${item.fat}g</div>
-                </div>
-                <div class="bg-[var(--background)] rounded-lg p-2 border border-[var(--border)]">
-                  <div class="text-xs text-[var(--muted-foreground)]">나트륨</div>
-                  <div class="text-sm font-bold">${item.sodium}mg</div>
-                </div>
-              </div>
-            ` : `
-              <div class="text-xs text-[var(--muted-foreground)] bg-[var(--background)] border border-[var(--border)] rounded-lg p-3">
-                ℹ️ 이 메뉴는 매장 메뉴판에 표기된 정식 메뉴이나, 공식 영양성분표에서 상세 수치(kcal/탄단지)가 제공되지 않는 메뉴입니다.
-              </div>
-            `}
             <div class="pt-2 flex justify-end gap-2">
-              <button onclick="addToTray('${item.id}'); closeImageModal();" class="px-4 py-2 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-semibold hover:opacity-90 transition">
+              <button onclick="addToTray('${item.id}'); closeImageModal();" class="px-5 py-2.5 rounded-xl bg-[var(--primary)] text-[var(--primary-foreground)] text-sm font-extrabold hover:opacity-90 transition">
                 + 내 이름으로 담기
               </button>
-              <button onclick="closeImageModal()" class="px-4 py-2 rounded-lg border border-[var(--border)] text-xs font-semibold hover:bg-[var(--secondary)] transition">
+              <button onclick="closeImageModal()" class="px-4 py-2.5 rounded-xl border border-[var(--border)] text-sm font-bold hover:bg-[var(--secondary)] transition">
                 닫기
               </button>
             </div>
@@ -1499,9 +1485,9 @@
         const btn = document.getElementById(modes[k]);
         if (!btn) return;
         if (k === mode) {
-          btn.className = 'px-2 py-1 rounded-md text-xs font-semibold transition bg-[var(--primary)] text-[var(--primary-foreground)]';
+          btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition bg-[var(--primary)] text-[var(--primary-foreground)]';
         } else {
-          btn.className = 'px-2 py-1 rounded-md text-xs font-semibold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
+          btn.className = 'px-2.5 py-1.5 rounded-lg text-xs font-bold transition text-[var(--muted-foreground)] hover:text-[var(--foreground)]';
         }
       });
       render();
@@ -1510,10 +1496,12 @@
     function toggleQuickFilter(key) {
       state.quickFilters[key] = !state.quickFilters[key];
       const btn = document.getElementById('qf_' + key);
-      if (state.quickFilters[key]) {
-        btn.className = 'px-2.5 py-1 rounded-full text-xs font-semibold border border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap shrink-0 transition';
-      } else {
-        btn.className = 'px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition';
+      if (btn) {
+        if (state.quickFilters[key]) {
+          btn.className = 'px-3 py-1 rounded-full text-xs font-extrabold border border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)] whitespace-nowrap shrink-0 transition';
+        } else {
+          btn.className = 'px-3 py-1 rounded-full text-xs font-bold border border-[var(--border)] whitespace-nowrap shrink-0 transition';
+        }
       }
       render();
     }
@@ -1525,7 +1513,7 @@
       Object.keys(state.quickFilters).forEach(k => {
         state.quickFilters[k] = false;
         const btn = document.getElementById('qf_' + k);
-        if (btn) btn.className = 'px-2.5 py-1 rounded-full text-xs font-medium border border-[var(--border)] whitespace-nowrap shrink-0 transition';
+        if (btn) btn.className = 'px-3 py-1 rounded-full text-xs font-bold border border-[var(--border)] whitespace-nowrap shrink-0 transition';
       });
       render();
     }
@@ -1540,14 +1528,14 @@
     }
 
     // =========================================================================
-    // Cart / Group Order Actions (with Name & 17:00 Cutoff Validation)
+    // Cart / Group Order Actions (with Name & 16:50 Cutoff Validation)
     // =========================================================================
     function addToTray(id, event) {
       if (event) event.stopPropagation();
 
       const dl = getDeadlineInfo();
       if (!dl.canOrder) {
-        showToast('⛔ 오후 5시(17:00)가 지나 오늘 주문이 마감되었습니다! (매일 17시 마감)');
+        showToast('⛔ 오후 4시 50분(16:50)이 지나 오늘 주문이 마감되었습니다! (매일 16:50 마감)');
         return;
       }
 
@@ -1652,7 +1640,7 @@
     function changeGroupQty(groupKey, delta) {
       const dl = getDeadlineInfo();
       if (!dl.canOrder) {
-        showToast('⛔ 오후 5시(17:00) 이후에는 수량을 변경할 수 없습니다!');
+        showToast('⛔ 오후 4시 50분(16:50) 이후에는 수량을 변경할 수 없습니다!');
         return;
       }
 
@@ -1705,7 +1693,7 @@
     function clearMyTray() {
       const dl = getDeadlineInfo();
       if (!dl.canOrder) {
-        showToast('⛔ 오후 5시(17:00) 이후에는 주문을 수정할 수 없습니다!');
+        showToast('⛔ 오후 4시 50분(16:50) 이후에는 주문을 수정할 수 없습니다!');
         return;
       }
       if (!state.userName) {
@@ -1718,7 +1706,7 @@
     function clearUserOrdersByName(targetName) {
       const dl = getDeadlineInfo();
       if (!dl.canOrder) {
-        showToast('⛔ 오후 5시(17:00) 이후에는 주문을 삭제할 수 없습니다!');
+        showToast('⛔ 오후 4시 50분(16:50) 이후에는 주문을 삭제할 수 없습니다!');
         return;
       }
       const userItems = state.tray.filter(i => i.userName === targetName);
@@ -1758,7 +1746,7 @@
     function clearTray() {
       const dl = getDeadlineInfo();
       if (!dl.canOrder) {
-        showToast('⛔ 오후 5시(17:00) 이후에는 전체 초기화를 할 수 없습니다!');
+        showToast('⛔ 오후 4시 50분(16:50) 이후에는 전체 초기화를 할 수 없습니다!');
         return;
       }
       if (state.tray.length === 0) return;
@@ -2382,31 +2370,11 @@
         acc.basePrice += cur.price;
         acc.extraPrice += (cur.extraPrice || (cur.effectivePrice - cur.price));
         acc.totalPrice += cur.effectivePrice;
-        if (cur.hasNutrition) {
-          acc.weight += cur.weight;
-          acc.kcal += cur.kcal;
-          acc.protein += cur.protein;
-          acc.carbs += cur.carbs;
-          acc.sugar += cur.sugar;
-          acc.fat += cur.fat;
-          acc.sodium += cur.sodium;
-          acc.nutriItems += 1;
-        } else {
-          acc.noNutriItems += 1;
-        }
         return acc;
-      }, { basePrice: 0, extraPrice: 0, totalPrice: 0, weight: 0, kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, sodium: 0, nutriItems: 0, noNutriItems: 0 });
+      }, { basePrice: 0, extraPrice: 0, totalPrice: 0 });
 
       const supplyPrice = Math.round(totals.totalPrice / 1.1);
       const vatPrice = totals.totalPrice - supplyPrice;
-      const protPer1k = totals.totalPrice > 0 ? (totals.protein / (totals.totalPrice / 1000)).toFixed(1) : '0.0';
-      const protPer100kcal = totals.kcal > 0 ? ((totals.protein / totals.kcal) * 100).toFixed(1) : '0.0';
-
-      const pctProtein = Math.min(100, Math.round((totals.protein / 55) * 100));
-      const pctCarbs = Math.min(100, Math.round((totals.carbs / 324) * 100));
-      const pctSugar = Math.min(100, Math.round((totals.sugar / 100) * 100));
-      const pctFat = Math.min(100, Math.round((totals.fat / 54) * 100));
-      const pctSodium = Math.min(100, Math.round((totals.sodium / 2000) * 100));
 
       content.innerHTML = `
         <!-- Top Action Bar -->
@@ -2426,14 +2394,14 @@
         <div class="text-center space-y-1 pt-1">
           <div class="text-xs font-bold tracking-widest text-emerald-700">FRESH & HEALTHY · GROUP ORDER</div>
           <h2 class="text-2xl font-black tracking-tight text-slate-900">SALARIA 샐러리아</h2>
-          <p class="text-xs text-slate-500">${scope === 'all' ? `단체 주문서 & 영양 영수증 (참여 ${byPerson.length}명)` : `${state.userName || '내'} 주문 & 영양 영수증`}</p>
+          <p class="text-xs text-slate-500">${scope === 'all' ? `단체 주문서 영수증 (참여 ${byPerson.length}명)` : `${state.userName || '내'} 주문 영수증`}</p>
           <div class="inline-block mt-1 px-3 py-0.5 rounded border border-slate-800 text-xs font-extrabold text-slate-900">
             [${state.orderType}] ${state.todayKey} (#${state.orderNo})
           </div>
         </div>
 
         <div class="text-xs text-slate-600 border-t border-b border-dashed border-slate-400 py-2 space-y-0.5">
-          <div class="flex justify-between"><span>주문일자(일별초기화):</span><span>${dateStr} (17:00 마감)</span></div>
+          <div class="flex justify-between"><span>주문일자(일별초기화):</span><span>${dateStr} (16:50 마감)</span></div>
           <div class="flex justify-between"><span>주문자 명단:</span><span class="font-bold text-slate-900">${byPerson.map(p => `${p.userName}(${p.totalQty})`).join(', ')}</span></div>
         </div>
 
@@ -2498,8 +2466,7 @@
                       └ [옵션] ${g.optionSummary}
                     </div>
                   ` : ''}
-                  <div class="text-xs text-slate-500 pl-3 flex justify-between">
-                    <span>${g.hasNutrition ? `열량 ${g.kcal * g.qty}kcal · 단백질 ${g.protein * g.qty}g` : '영양성분표 미제공 품목'}</span>
+                  <div class="text-xs text-slate-500 pl-3 flex justify-end">
                     <span>(단가 ${g.effectivePrice.toLocaleString('ko-KR')}원)</span>
                   </div>
                 </div>
@@ -2530,79 +2497,12 @@
           </div>
         </div>
 
-        <!-- Nutrition Facts Box -->
-        <div class="border-2 border-slate-900 p-3 bg-white space-y-2">
-          <div class="border-b-4 border-slate-900 pb-1 flex items-end justify-between">
-            <div>
-              <div class="text-sm font-black tracking-tight text-slate-900">NUTRITION FACTS</div>
-              <div class="text-xs text-slate-500">총 섭취 영양성분 합계표 ${totals.weight > 0 ? `(총 중량 ${totals.weight}g)` : ''}</div>
-            </div>
-            <div class="text-right">
-              <span class="text-xl font-black text-slate-900">${totals.kcal}</span>
-              <span class="text-xs font-bold text-slate-700">kcal</span>
-            </div>
-          </div>
-
-          <div class="space-y-1.5 text-xs pt-1">
-            <div>
-              <div class="flex justify-between font-bold text-slate-900">
-                <span>💪 총 단백질 (Protein)</span>
-                <span>${totals.protein}g <span class="text-emerald-700">(${pctProtein}%)</span></span>
-              </div>
-              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
-                <div class="h-full bg-emerald-600 rounded-full" style="width: ${pctProtein}%"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between font-semibold text-slate-800">
-                <span>🍚 총 탄수화물 (Carbs)</span>
-                <span>${totals.carbs}g (${pctCarbs}%)</span>
-              </div>
-              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
-                <div class="h-full bg-slate-700 rounded-full" style="width: ${pctCarbs}%"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between font-semibold text-slate-800">
-                <span>🍬 총 당류 (Sugars)</span>
-                <span>${totals.sugar}g (${pctSugar}%)</span>
-              </div>
-              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
-                <div class="h-full bg-amber-500 rounded-full" style="width: ${pctSugar}%"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between font-semibold text-slate-800">
-                <span>🥑 총 지방 (Fat)</span>
-                <span>${totals.fat}g (${pctFat}%)</span>
-              </div>
-              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
-                <div class="h-full bg-rose-500 rounded-full" style="width: ${pctFat}%"></div>
-              </div>
-            </div>
-            <div>
-              <div class="flex justify-between font-semibold text-slate-800">
-                <span>🧂 총 나트륨 (Sodium)</span>
-                <span>${totals.sodium.toLocaleString('ko-KR')}mg (${pctSodium}%)</span>
-              </div>
-              <div class="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden mt-0.5">
-                <div class="h-full bg-blue-500 rounded-full" style="width: ${pctSodium}%"></div>
-              </div>
-            </div>
-          </div>
-
-          <div class="border-t border-dashed border-slate-300 pt-2 flex justify-between text-xs text-slate-600 font-semibold">
-            <span>⚡ 1천원당 단백질: <b>${protPer1k}g</b></span>
-            <span>🎯 100kcal당 단백질: <b>${protPer100kcal}g</b></span>
-          </div>
-        </div>
-
         <!-- Barcode & Footer -->
         <div class="text-center space-y-2 pt-1">
           <div class="text-xs tracking-[0.25em] font-mono text-slate-800 select-none overflow-hidden whitespace-nowrap">
             ||| |||| | ||| |||| || | |||| ||| || | ||||
           </div>
-          <div class="text-xs text-slate-500">THANK YOU FOR EATING HEALTHY!</div>
+          <div class="text-xs text-slate-500">THANK YOU FOR EATING FRESH!</div>
         </div>
 
         <!-- Action Buttons -->
@@ -2692,7 +2592,7 @@
 
       return `
         <div class="bg-[var(--card)] border-2 border-[var(--primary)]/60 rounded-2xl p-3 sm:p-4 shadow-md space-y-3">
-          <!-- Row 1: Date, Daily Reset Info & 17:00 Deadline Countdown -->
+          <!-- Row 1: Date, Daily Reset Info & 16:50 Deadline Countdown -->
           <div class="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-[var(--border)]">
             <div class="flex flex-wrap items-center gap-1.5">
               <span class="px-2.5 py-1 rounded-lg bg-[var(--secondary)] text-[var(--foreground)] text-xs font-extrabold flex items-center gap-1">
@@ -2706,8 +2606,8 @@
                   : 'bg-rose-500/15 text-rose-500 border border-rose-500/30'
               }">
                 ${dl.canOrder
-                  ? `⏰ 17:00 마감 (${dl.remainStr})`
-                  : `⛔ 금일 17:00 주문 마감됨 (현재 ${dl.timeStr})`
+                  ? `⏰ 16:50 마감 (${dl.remainStr})`
+                  : `⛔ 금일 16:50 주문 마감됨 (현재 ${dl.timeStr})`
                 }
               </span>
               ${isFinalizedToday ? `
@@ -2934,7 +2834,7 @@
                             <span class="text-xs font-bold text-[var(--muted-foreground)]">${person.totalQty}개</span>
                           </div>
                           <div class="flex items-center gap-2 shrink-0">
-                            <span class="text-xs font-black text-[var(--primary)]">${formatPrice(person.totalPrice)}</span>
+                            <span class="text-sm font-black text-[var(--primary)]">${formatPrice(person.totalPrice)}</span>
                             ${dl.canOrder ? `
                               <button
                                 onclick="clearUserOrdersByName('${safeUser}')"
@@ -2970,13 +2870,6 @@
                             `;
                           }).join('')}
                         </div>
-
-                        ${person.totalKcal > 0 ? `
-                          <div class="text-xs text-[var(--muted-foreground)] pt-1 border-t border-dashed border-[var(--border)] flex justify-between">
-                            <span>🔥 열량 ${person.totalKcal}kcal</span>
-                            <span>💪 단백질 <b class="text-emerald-500">${person.totalProtein}g</b></span>
-                          </div>
-                        ` : ''}
                       </div>
                     `;
                   }).join('')}
@@ -3083,17 +2976,8 @@
 
       const total = state.tray.reduce((acc, cur) => {
         acc.price += cur.effectivePrice;
-        if (cur.hasNutrition) {
-          acc.kcal += cur.kcal;
-          acc.protein += cur.protein;
-          acc.carbs += cur.carbs;
-          acc.sugar += cur.sugar;
-          acc.fat += cur.fat;
-          acc.sodium += cur.sodium;
-          acc.nutriCount += 1;
-        }
         return acc;
-      }, { price: 0, kcal: 0, protein: 0, carbs: 0, sugar: 0, fat: 0, sodium: 0, nutriCount: 0 });
+      }, { price: 0 });
 
       if (state.deviceMode === 'mobile') {
         totalsEl.innerHTML = `
@@ -3110,8 +2994,6 @@
           <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
             <span class="font-extrabold text-base text-[var(--primary)]">👥 ${byPerson.length}명 (${state.tray.length}개) · ${formatPrice(total.price)}</span>
             <span class="px-2 py-0.5 rounded bg-[var(--secondary)] font-bold">주문자: ${byPerson.map(p => `${p.userName}(${p.totalQty})`).join(', ')}</span>
-            <span>🔥 <b>${total.kcal}kcal</b></span>
-            <span>💪 단백질 <b class="text-emerald-500">${total.protein}g</b></span>
           </div>
         `;
       }
@@ -3136,7 +3018,7 @@
           <button
             id="catTab_${key}"
             onclick="setCategory('${key}')"
-            class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 border shrink-0 whitespace-nowrap ${
+            class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center gap-1.5 border shrink-0 whitespace-nowrap ${
               active
                 ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)] shadow-xs'
                 : 'bg-[var(--card)] text-[var(--foreground)] border-[var(--border)] hover:bg-[var(--secondary)]'
@@ -3241,12 +3123,9 @@
       let list = MENU_DATA.filter(item => {
         if (state.category !== 'ALL' && item.category !== state.category) return false;
         if (q && !item.fullName.toLowerCase().includes(q) && !item.boardName.toLowerCase().includes(q)) return false;
-        if (state.quickFilters.onlyNutrition && !item.hasNutrition) return false;
-        if (state.quickFilters.highProtein && (!item.hasNutrition || item.protein < 30)) return false;
-        if (state.quickFilters.lowCal && (!item.hasNutrition || item.kcal > 400)) return false;
-        if (state.quickFilters.lowSugar && (!item.hasNutrition || item.sugar > 10)) return false;
+        if (state.quickFilters.under8k && getItemEffectivePrice(item) > 8000) return false;
         if (state.quickFilters.under10k && getItemEffectivePrice(item) > 10000) return false;
-        if (state.quickFilters.lowSodium && (!item.hasNutrition || item.sodium > 600)) return false;
+        if (state.quickFilters.wholeWheatAvail && !(CATEGORY_META[item.category]?.breadOptions && !item.fixedOption)) return false;
         return true;
       });
 
@@ -3255,21 +3134,7 @@
         const priceB = getItemEffectivePrice(b);
         if (sort === 'price_asc') return priceA - priceB;
         if (sort === 'price_desc') return priceB - priceA;
-        if (sort === 'default') return 0;
-
-        if (a.hasNutrition !== b.hasNutrition) return a.hasNutrition ? -1 : 1;
-        if (!a.hasNutrition && !b.hasNutrition) return priceA - priceB;
-
-        switch (sort) {
-          case 'protein_desc': return b.protein - a.protein || a.kcal - b.kcal;
-          case 'cal_asc': return a.kcal - b.kcal;
-          case 'cal_desc': return b.kcal - a.kcal;
-          case 'protein_per_price': return (b.protein / priceB) - (a.protein / priceA);
-          case 'protein_per_cal': return (b.protein / b.kcal) - (a.protein / a.kcal);
-          case 'sugar_asc': return a.sugar - b.sugar;
-          case 'sodium_asc': return a.sodium - b.sodium;
-          default: return 0;
-        }
+        return 0;
       });
 
       return list;
@@ -3279,7 +3144,7 @@
       const info = getItemOrderers(itemId);
       if (info.totalQty === 0) return '';
       return `
-        <div class="mt-1.5 px-2 py-1 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/30 flex items-center justify-between gap-1 text-xs">
+        <div class="mt-2 px-2.5 py-1.5 rounded-lg bg-[var(--primary)]/10 border border-[var(--primary)]/30 flex items-center justify-between gap-1 text-xs sm:text-sm">
           <span class="font-bold text-[var(--primary)] truncate">
             👥 주문: ${info.list.map(u => `${u.userName}${u.qty > 1 ? `(${u.qty})` : ''}`).join(', ')}
           </span>
@@ -3302,14 +3167,14 @@
       const sel = itemSelections[item.id] || { breadIdx: 0, sauce: '' };
       if (compact) {
         return `
-          <div class="mt-1.5 pt-1.5 border-t border-[var(--border)] space-y-1" onclick="event.stopPropagation()">
+          <div class="mt-1.5 pt-1.5 border-t border-[var(--border)] space-y-1.5" onclick="event.stopPropagation()">
             ${meta.breadOptions ? `
               <div class="grid grid-cols-2 gap-1">
                 ${meta.breadOptions.map((opt, idx) => `
                   <button
                     type="button"
                     onclick="setItemBread(event, '${item.id}', ${idx})"
-                    class="px-1.5 py-1 rounded text-xs font-semibold border transition truncate ${
+                    class="px-2 py-1.5 rounded text-xs font-bold border transition truncate ${
                       sel.breadIdx === idx
                         ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]'
                         : 'bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)]'
@@ -3323,7 +3188,7 @@
             ${meta.sauceOptions ? `
               <select
                 onchange="setItemSauce(event, '${item.id}', this.value)"
-                class="w-full px-2 py-1 rounded border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-semibold"
+                class="w-full px-2 py-1.5 rounded border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-bold"
               >
                 ${meta.sauceOptions.map(s => `<option value="${s}" ${sel.sauce === s ? 'selected' : ''}>${s}</option>`).join('')}
               </select>
@@ -3336,13 +3201,13 @@
         <div class="mt-2.5 pt-2.5 border-t border-[var(--border)] space-y-2" onclick="event.stopPropagation()">
           ${meta.breadOptions ? `
             <div class="flex items-center justify-between gap-2">
-              <span class="text-xs font-medium text-[var(--muted-foreground)] shrink-0">${meta.breadLabel}:</span>
-              <div class="grid grid-cols-2 gap-1 flex-1 max-w-[230px]">
+              <span class="text-xs font-bold text-[var(--muted-foreground)] shrink-0">${meta.breadLabel}:</span>
+              <div class="grid grid-cols-2 gap-1.5 flex-1 max-w-[260px]">
                 ${meta.breadOptions.map((opt, idx) => `
                   <button
                     type="button"
                     onclick="setItemBread(event, '${item.id}', ${idx})"
-                    class="px-2 py-1 rounded-md text-xs font-semibold border transition truncate ${
+                    class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition truncate ${
                       sel.breadIdx === idx
                         ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]'
                         : 'bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)] hover:text-[var(--foreground)]'
@@ -3356,14 +3221,14 @@
           ` : ''}
           ${meta.sauceOptions ? `
             <div class="flex items-center justify-between gap-2">
-              <span class="text-xs font-medium text-[var(--muted-foreground)] shrink-0">${meta.sauceLabel}:</span>
+              <span class="text-xs font-bold text-[var(--muted-foreground)] shrink-0">${meta.sauceLabel}:</span>
               ${meta.sauceOptions.length <= 2 ? `
-                <div class="grid grid-cols-2 gap-1 flex-1 max-w-[230px]">
+                <div class="grid grid-cols-2 gap-1.5 flex-1 max-w-[260px]">
                   ${meta.sauceOptions.map(s => `
                     <button
                       type="button"
                       onclick="setItemSauce(event, '${item.id}', '${s}')"
-                      class="px-2 py-1 rounded-md text-xs font-semibold border transition truncate ${
+                      class="px-2.5 py-1.5 rounded-lg text-xs font-bold border transition truncate ${
                         sel.sauce === s
                           ? 'bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]'
                           : 'bg-[var(--background)] text-[var(--muted-foreground)] border-[var(--border)] hover:text-[var(--foreground)]'
@@ -3376,7 +3241,7 @@
               ` : `
                 <select
                   onchange="setItemSauce(event, '${item.id}', this.value)"
-                  class="flex-1 max-w-[230px] px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                  class="flex-1 max-w-[260px] px-2.5 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--foreground)] text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
                 >
                   ${meta.sauceOptions.map(s => `<option value="${s}" ${sel.sauce === s ? 'selected' : ''}>${s}</option>`).join('')}
                 </select>
@@ -3405,7 +3270,7 @@
       }
 
       const isMobile = state.deviceMode === 'mobile';
-      const btnAddLabel = dl.canOrder ? '+ 담기' : '⛔ 17시마감';
+      const btnAddLabel = dl.canOrder ? '+ 담기' : '⛔ 16:50마감';
       const btnAddClass = dl.canOrder
         ? 'bg-[var(--primary)] text-[var(--primary-foreground)] active:scale-95'
         : 'bg-slate-400/50 text-[var(--muted-foreground)] cursor-not-allowed';
@@ -3414,7 +3279,7 @@
       if (isMobile) {
         if (state.viewMode === 'card') {
           container.innerHTML = `
-            <div class="space-y-2.5">
+            <div class="space-y-3">
               ${list.map(item => {
                 const catMeta = CATEGORY_META[item.category];
                 const effPrice = getItemEffectivePrice(item);
@@ -3423,14 +3288,14 @@
                 const ordererInfo = getItemOrderers(item.id);
 
                 return `
-                  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3 shadow-xs space-y-2">
-                    <div class="flex items-start gap-3">
+                  <div class="bg-[var(--card)] border border-[var(--border)] rounded-2xl p-3.5 shadow-xs space-y-2.5">
+                    <div class="flex items-center gap-3.5">
                       <div class="relative shrink-0" onclick="openImageModal(event, '${item.id}')">
                         ${imgSrc ? `
-                          <img src="${imgSrc}" alt="${item.fullName}" loading="lazy" class="w-20 h-20 rounded-xl object-cover border border-[var(--border)] bg-white" />
+                          <img src="${imgSrc}" alt="${item.fullName}" loading="lazy" class="w-24 h-24 rounded-xl object-cover border border-[var(--border)] bg-white" />
                           <span class="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1 rounded">🔍</span>
                         ` : `
-                          <div class="w-20 h-20 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center text-center p-1">
+                          <div class="w-24 h-24 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center text-center p-1">
                             <span class="text-2xl">${catMeta.icon}</span>
                             <span class="text-xs text-[var(--muted-foreground)]">사진없음</span>
                           </div>
@@ -3438,39 +3303,27 @@
                       </div>
 
                       <div class="flex-1 min-w-0">
-                        <div class="flex items-start justify-between gap-1.5">
+                        <div class="flex items-start justify-between gap-2">
                           <div class="min-w-0">
-                            <span class="inline-block text-xs font-semibold px-1.5 py-0.2 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">
-                              ${catMeta.icon} ${catMeta.name}${item.hasNutrition ? ` · ${item.weight}g` : ''}
+                            <span class="inline-block text-xs font-bold px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)]">
+                              ${catMeta.icon} ${catMeta.name}
                             </span>
-                            <h3 class="font-extrabold text-sm text-[var(--foreground)] truncate mt-0.5">${item.boardName}</h3>
+                            <h3 class="font-black text-base text-[var(--foreground)] truncate mt-1">${item.boardName}</h3>
+                            <p class="text-xs text-[var(--muted-foreground)] truncate">${item.fullName}</p>
                           </div>
                           <button
                             onclick="addToTray('${item.id}', event)"
-                            class="px-3 py-1.5 rounded-xl ${btnAddClass} text-xs font-extrabold shadow-xs transition shrink-0 flex items-center gap-1"
+                            class="px-3.5 py-2 rounded-xl ${btnAddClass} text-xs sm:text-sm font-black shadow-xs transition shrink-0 flex items-center gap-1"
                           >
                             <span>${btnAddLabel}</span>
                             ${ordererInfo.totalQty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${ordererInfo.totalQty}</span>` : ''}
                           </button>
                         </div>
 
-                        <div class="flex items-baseline gap-2 mt-1">
-                          <span class="text-base font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
-                          ${extraAdded ? `<span class="text-xs text-amber-500 font-bold">(+500)</span>` : ''}
-                          ${item.hasNutrition ? `<span class="text-xs font-bold text-[var(--muted-foreground)]">· ${item.kcal} kcal</span>` : ''}
+                        <div class="flex items-baseline gap-2 mt-1.5">
+                          <span class="text-lg font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
+                          ${extraAdded ? `<span class="text-xs text-amber-500 font-bold">(통밀 +500원)</span>` : ''}
                         </div>
-
-                        ${item.hasNutrition ? `
-                          <div class="flex flex-wrap items-center gap-1 mt-1.5 text-xs">
-                            <span class="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-extrabold">단백질 ${item.protein}g</span>
-                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] font-semibold">탄 ${item.carbs}g</span>
-                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] font-semibold">당 ${item.sugar}g</span>
-                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] font-semibold">지 ${item.fat}g</span>
-                            <span class="px-1.5 py-0.5 rounded bg-[var(--secondary)] text-[var(--muted-foreground)]">나트륨 ${item.sodium}</span>
-                          </div>
-                        ` : `
-                          <div class="text-xs text-[var(--muted-foreground)] mt-1">📋 메뉴판 정식 메뉴 (영양표 미제공)</div>
-                        `}
                       </div>
                     </div>
 
@@ -3495,27 +3348,21 @@
                     <div>
                       <div class="relative mb-2" onclick="openImageModal(event, '${item.id}')">
                         ${imgSrc ? `
-                          <img src="${imgSrc}" alt="${item.fullName}" loading="lazy" class="w-full h-28 rounded-xl object-cover border border-[var(--border)] bg-white" />
+                          <img src="${imgSrc}" alt="${item.fullName}" loading="lazy" class="w-full h-32 rounded-xl object-cover border border-[var(--border)] bg-white" />
                         ` : `
-                          <div class="w-full h-28 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center">
+                          <div class="w-full h-32 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center">
                             <span class="text-3xl">${catMeta.icon}</span>
                             <span class="text-xs text-[var(--muted-foreground)] mt-1">사진없음</span>
                           </div>
                         `}
-                        <span class="absolute top-1.5 left-1.5 bg-black/65 text-white text-xs px-1.5 py-0.5 rounded-md font-semibold">
+                        <span class="absolute top-1.5 left-1.5 bg-black/65 text-white text-xs px-1.5 py-0.5 rounded-md font-bold">
                           ${catMeta.icon} ${catMeta.name}
                         </span>
-                        ${item.hasNutrition ? `
-                          <span class="absolute bottom-1.5 right-1.5 bg-emerald-600/95 text-white text-xs px-1.5 py-0.5 rounded-md font-extrabold">
-                            💪 ${item.protein}g
-                          </span>
-                        ` : ''}
                       </div>
 
-                      <h3 class="font-extrabold text-xs text-[var(--foreground)] truncate">${item.boardName}</h3>
-                      <div class="flex items-baseline justify-between mt-0.5">
-                        <span class="text-sm font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
-                        <span class="text-xs text-[var(--muted-foreground)]">${item.hasNutrition ? `${item.kcal}kcal` : '성분미제공'}</span>
+                      <h3 class="font-black text-sm text-[var(--foreground)] truncate">${item.boardName}</h3>
+                      <div class="flex items-baseline justify-between mt-1">
+                        <span class="text-base font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
                       </div>
                       ${renderOrdererBadgeHTML(item.id)}
                       ${renderOptionControls(item, true)}
@@ -3523,7 +3370,7 @@
 
                     <button
                       onclick="addToTray('${item.id}', event)"
-                      class="mt-2 w-full py-1.5 rounded-xl ${btnAddClass} text-xs font-extrabold transition flex items-center justify-center gap-1"
+                      class="mt-2.5 w-full py-2 rounded-xl ${btnAddClass} text-xs sm:text-sm font-black transition flex items-center justify-center gap-1"
                     >
                       <span>${btnAddLabel}</span>
                       ${ordererInfo.totalQty > 0 ? `<span class="px-1.5 py-0.2 rounded-full bg-black/25 text-white text-xs">${ordererInfo.totalQty}</span>` : ''}
@@ -3537,13 +3384,11 @@
           container.innerHTML = `
             <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-xs">
               <div class="overflow-x-auto custom-scroll">
-                <table class="w-full text-xs text-left">
-                  <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] border-b border-[var(--border)]">
+                <table class="w-full text-xs sm:text-sm text-left">
+                  <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] border-b border-[var(--border)] font-extrabold">
                     <tr>
-                      <th class="py-2.5 px-2.5">메뉴명 / 주문자</th>
+                      <th class="py-2.5 px-3">메뉴명 / 주문자</th>
                       <th class="py-2.5 px-2 text-right">가격</th>
-                      <th class="py-2.5 px-2 text-right">열량</th>
-                      <th class="py-2.5 px-2 text-right">단백질</th>
                       <th class="py-2.5 px-2 text-center">담기</th>
                     </tr>
                   </thead>
@@ -3554,16 +3399,14 @@
                       const ordererInfo = getItemOrderers(item.id);
                       return `
                         <tr onclick="addToTray('${item.id}', event)" class="hover:bg-[var(--secondary)] cursor-pointer">
-                          <td class="py-2 px-2.5">
-                            <div class="font-bold text-[var(--foreground)]">${item.boardName}</div>
+                          <td class="py-2.5 px-3">
+                            <div class="font-extrabold text-sm text-[var(--foreground)]">${item.boardName}</div>
                             ${optSummary ? `<div class="text-xs text-[var(--muted-foreground)]">${optSummary}</div>` : ''}
                             ${ordererInfo.totalQty > 0 ? `<div class="text-xs text-[var(--primary)] font-bold">👥 ${ordererInfo.list.map(u => u.userName).join(', ')} (${ordererInfo.totalQty})</div>` : ''}
                           </td>
-                          <td class="py-2 px-2 text-right font-bold text-[var(--primary)] whitespace-nowrap">${formatPrice(effPrice)}</td>
-                          <td class="py-2 px-2 text-right">${item.hasNutrition ? `${item.kcal}` : '-'}</td>
-                          <td class="py-2 px-2 text-right font-extrabold text-emerald-500">${item.hasNutrition ? `${item.protein}g` : '-'}</td>
-                          <td class="py-2 px-2 text-center">
-                            <span class="px-2 py-1 rounded ${btnAddClass} font-bold">${dl.canOrder ? '+' : '⛔'}</span>
+                          <td class="py-2.5 px-2 text-right font-black text-base text-[var(--primary)] whitespace-nowrap">${formatPrice(effPrice)}</td>
+                          <td class="py-2.5 px-2 text-center">
+                            <span class="px-2.5 py-1 rounded-lg ${btnAddClass} font-extrabold">${dl.canOrder ? '+ 담기' : '⛔'}</span>
                           </td>
                         </tr>
                       `;
@@ -3580,7 +3423,7 @@
       // 2) PC VERSION RENDERING
       if (state.viewMode === 'card' || state.viewMode === 'compact') {
         const gridCols = state.viewMode === 'compact'
-          ? 'grid-cols-1 md:grid-cols-2 gap-3.5'
+          ? 'grid-cols-1 md:grid-cols-2 gap-4'
           : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4';
 
         container.innerHTML = `
@@ -3590,104 +3433,63 @@
               const effPrice = getItemEffectivePrice(item);
               const extraAdded = effPrice > item.price;
               const imgSrc = getImg(item.id);
-              const protPer1k = item.hasNutrition ? (item.protein / (effPrice / 1000)).toFixed(1) : null;
-              const protPer100kcal = item.hasNutrition ? ((item.protein / item.kcal) * 100).toFixed(1) : null;
               const ordererInfo = getItemOrderers(item.id);
 
               return `
                 <div
                   onclick="addToTray('${item.id}', event)"
-                  class="bg-[var(--card)] border border-[var(--border)] rounded-xl p-4 shadow-sm hover:border-[var(--primary)] transition cursor-pointer flex flex-col justify-between gap-2.5 group"
+                  class="bg-[var(--card)] border-2 border-[var(--border)] rounded-2xl p-4 shadow-sm hover:border-[var(--primary)] transition cursor-pointer flex flex-col justify-between gap-3 group"
                 >
                   <div>
-                    <div class="flex items-center gap-3.5">
+                    <div class="flex items-center gap-4">
                       <div class="relative shrink-0" onclick="openImageModal(event, '${item.id}')" title="클릭하여 상세 보기">
                         ${imgSrc ? `
                           <img
                             src="${imgSrc}"
                             alt="${item.fullName}"
                             loading="lazy"
-                            class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl object-cover border border-[var(--border)] bg-white group-hover:scale-105 transition-transform duration-200"
+                            class="w-24 h-24 sm:w-28 sm:h-28 rounded-xl object-cover border border-[var(--border)] bg-white group-hover:scale-105 transition-transform duration-200"
                           />
                           <span class="absolute bottom-1 right-1 bg-black/60 text-white text-xs px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition">🔍</span>
                         ` : `
-                          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center text-center p-1">
-                            <span class="text-2xl">${catMeta.icon}</span>
+                          <div class="w-24 h-24 sm:w-28 sm:h-28 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex flex-col items-center justify-center text-center p-1">
+                            <span class="text-3xl">${catMeta.icon}</span>
                             <span class="text-xs text-[var(--muted-foreground)] mt-0.5">사진없음</span>
                           </div>
                         `}
                       </div>
                       <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between gap-1">
-                          <span class="inline-block text-xs font-medium px-2 py-0.5 rounded bg-[var(--secondary)] text-[var(--secondary-foreground)] mb-1">
-                            ${catMeta.icon} ${catMeta.name}${item.hasNutrition ? ` · ${item.weight}g` : ''}
+                        <div class="flex items-center justify-between gap-1.5 mb-1">
+                          <span class="inline-block text-xs font-bold px-2 py-0.5 rounded-md bg-[var(--secondary)] text-[var(--secondary-foreground)]">
+                            ${catMeta.icon} ${catMeta.name}
                           </span>
                           <button
                             onclick="addToTray('${item.id}', event)"
-                            class="px-2.5 py-1 rounded-lg ${btnAddClass} text-xs font-bold shadow-xs hover:opacity-90 transition shrink-0"
+                            class="px-3.5 py-1.5 rounded-xl ${btnAddClass} text-xs sm:text-sm font-black shadow-xs hover:opacity-90 transition shrink-0"
                           >
                             ${btnAddLabel}${ordererInfo.totalQty > 0 ? ` (${ordererInfo.totalQty})` : ''}
                           </button>
                         </div>
-                        <h3 class="font-bold text-base text-[var(--foreground)] group-hover:text-[var(--primary)] transition truncate">
+                        <h3 class="font-black text-base sm:text-lg text-[var(--foreground)] group-hover:text-[var(--primary)] transition truncate">
                           ${item.boardName}
                         </h3>
                         <p class="text-xs text-[var(--muted-foreground)] truncate">${item.fullName}</p>
-                        <div class="flex items-baseline justify-between mt-1.5">
-                          <div>
-                            <span class="text-lg font-extrabold text-[var(--primary)]">${formatPrice(effPrice)}</span>
-                            ${extraAdded ? `<span class="text-xs text-amber-500 font-semibold ml-1">(+500)</span>` : ''}
-                          </div>
-                          ${item.hasNutrition
-                            ? `<span class="text-xs font-semibold text-[var(--muted-foreground)]">${item.kcal} kcal</span>`
-                            : `<span class="text-xs text-[var(--muted-foreground)]">성분표 미제공</span>`
-                          }
+                        <div class="flex items-baseline gap-2 mt-2">
+                          <span class="text-lg sm:text-xl font-black text-[var(--primary)]">${formatPrice(effPrice)}</span>
+                          ${extraAdded ? `<span class="text-xs text-amber-500 font-bold">(통밀 +500원)</span>` : ''}
                         </div>
                       </div>
                     </div>
 
                     ${renderOrdererBadgeHTML(item.id)}
-                    ${item.note && !item.fixedOption ? `<div class="mt-2 text-xs px-2 py-1 rounded bg-[var(--secondary)] text-[var(--muted-foreground)]">📌 ${item.note}</div>` : ''}
+                    ${item.note && !item.fixedOption ? `<div class="mt-2 text-xs px-2.5 py-1 rounded bg-[var(--secondary)] text-[var(--muted-foreground)]">📌 ${item.note}</div>` : ''}
                     ${renderOptionControls(item, false)}
                   </div>
 
-                  <!-- Nutrition or Add Button Footer -->
-                  ${item.hasNutrition ? `
-                    <div class="space-y-2 pt-2.5 border-t border-[var(--border)]">
-                      <div class="grid grid-cols-5 gap-1.5 text-center">
-                        <div class="bg-[var(--background)] rounded-lg p-1.5 border border-[var(--border)]">
-                          <div class="text-xs text-[var(--muted-foreground)]">단백질</div>
-                          <div class="text-sm font-bold text-emerald-500">${item.protein}g</div>
-                        </div>
-                        <div class="bg-[var(--background)] rounded-lg p-1.5 border border-[var(--border)]">
-                          <div class="text-xs text-[var(--muted-foreground)]">탄수화물</div>
-                          <div class="text-sm font-bold">${item.carbs}g</div>
-                        </div>
-                        <div class="bg-[var(--background)] rounded-lg p-1.5 border border-[var(--border)]">
-                          <div class="text-xs text-[var(--muted-foreground)]">당류</div>
-                          <div class="text-sm font-bold">${item.sugar}g</div>
-                        </div>
-                        <div class="bg-[var(--background)] rounded-lg p-1.5 border border-[var(--border)]">
-                          <div class="text-xs text-[var(--muted-foreground)]">지방</div>
-                          <div class="text-sm font-bold">${item.fat}g</div>
-                        </div>
-                        <div class="bg-[var(--background)] rounded-lg p-1.5 border border-[var(--border)]">
-                          <div class="text-xs text-[var(--muted-foreground)]">나트륨</div>
-                          <div class="text-sm font-bold">${item.sodium}</div>
-                        </div>
-                      </div>
-
-                      <div class="flex items-center justify-between text-xs text-[var(--muted-foreground)] pt-0.5">
-                        <span>⚡ 1천원당 단백질 <b>${protPer1k}g</b></span>
-                        <span>🎯 100kcal당 <b>${protPer100kcal}g</b></span>
-                      </div>
-                    </div>
-                  ` : `
-                    <div class="pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
-                      <span>📋 메뉴판 가격·옵션 등록 메뉴</span>
-                      <span class="font-semibold text-[var(--primary)]">${dl.canOrder ? '+ 클릭하여 내 이름으로 담기' : '⛔ 17:00 주문 마감'}</span>
-                    </div>
-                  `}
+                  <div class="pt-2.5 border-t border-[var(--border)] flex items-center justify-between text-xs text-[var(--muted-foreground)]">
+                    <span>🔍 사진 클릭 시 크게 보기</span>
+                    <span class="font-extrabold text-[var(--primary)]">${dl.canOrder ? '+ 카드 클릭 시 내 이름으로 담기' : '⛔ 16:50 주문 마감'}</span>
+                  </div>
                 </div>
               `;
             }).join('')}
@@ -3698,20 +3500,14 @@
           <div class="bg-[var(--card)] border border-[var(--border)] rounded-xl overflow-hidden shadow-sm">
             <div class="overflow-x-auto custom-scroll">
               <table class="w-full text-sm text-left">
-                <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs uppercase border-b border-[var(--border)]">
+                <thead class="bg-[var(--secondary)] text-[var(--secondary-foreground)] text-xs uppercase border-b border-[var(--border)] font-extrabold">
                   <tr>
                     <th class="py-3 px-3">사진</th>
                     <th class="py-3 px-3">카테고리</th>
                     <th class="py-3 px-3">메뉴명 / 실시간 주문자</th>
                     <th class="py-3 px-3">선택 옵션 (변경 가능)</th>
                     <th class="py-3 px-3 text-right">가격</th>
-                    <th class="py-3 px-3 text-right">중량(g)</th>
-                    <th class="py-3 px-3 text-right">열량(kcal)</th>
-                    <th class="py-3 px-3 text-right">단백질(g)</th>
-                    <th class="py-3 px-3 text-right">탄수화물(g)</th>
-                    <th class="py-3 px-3 text-right">당(g)</th>
-                    <th class="py-3 px-3 text-right">지방(g)</th>
-                    <th class="py-3 px-3 text-right">나트륨(mg)</th>
+                    <th class="py-3 px-3 text-center">담기</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-[var(--border)]">
@@ -3723,28 +3519,24 @@
                     const ordererInfo = getItemOrderers(item.id);
                     return `
                       <tr onclick="addToTray('${item.id}', event)" class="hover:bg-[var(--secondary)] cursor-pointer transition">
-                        <td class="py-2 px-3">
+                        <td class="py-2.5 px-3">
                           ${imgSrc ? `
-                            <img src="${imgSrc}" alt="${item.boardName}" onclick="openImageModal(event, '${item.id}')" class="w-11 h-11 rounded-lg object-cover border border-[var(--border)] bg-white hover:scale-110 transition" />
+                            <img src="${imgSrc}" alt="${item.boardName}" onclick="openImageModal(event, '${item.id}')" class="w-14 h-14 rounded-xl object-cover border border-[var(--border)] bg-white hover:scale-110 transition" />
                           ` : `
-                            <div onclick="openImageModal(event, '${item.id}')" class="w-11 h-11 rounded-lg border border-[var(--border)] bg-[var(--secondary)] flex items-center justify-center text-lg">${catMeta.icon}</div>
+                            <div onclick="openImageModal(event, '${item.id}')" class="w-14 h-14 rounded-xl border border-[var(--border)] bg-[var(--secondary)] flex items-center justify-center text-xl">${catMeta.icon}</div>
                           `}
                         </td>
-                        <td class="py-2.5 px-3 font-medium text-xs whitespace-nowrap">${catMeta.icon} ${catMeta.name}</td>
+                        <td class="py-2.5 px-3 font-bold text-xs whitespace-nowrap">${catMeta.icon} ${catMeta.name}</td>
                         <td class="py-2.5 px-3">
-                          <div class="font-semibold text-[var(--foreground)]">${item.boardName}</div>
+                          <div class="font-black text-base text-[var(--foreground)]">${item.boardName}</div>
                           <div class="text-xs text-[var(--muted-foreground)]">${item.fullName}</div>
-                          ${ordererInfo.totalQty > 0 ? `<div class="text-xs text-[var(--primary)] font-bold mt-0.5">👥 주문: ${ordererInfo.list.map(u => `${u.userName}(${u.qty})`).join(', ')}</div>` : ''}
+                          ${ordererInfo.totalQty > 0 ? `<div class="text-xs text-[var(--primary)] font-extrabold mt-0.5">👥 주문: ${ordererInfo.list.map(u => `${u.userName}(${u.qty})`).join(', ')}</div>` : ''}
                         </td>
-                        <td class="py-2.5 px-3 text-xs text-[var(--muted-foreground)]">${optSummary || '-'}</td>
-                        <td class="py-2.5 px-3 text-right font-bold text-[var(--primary)] whitespace-nowrap">${formatPrice(effPrice)}</td>
-                        <td class="py-2.5 px-3 text-right">${item.hasNutrition ? item.weight : '-'}</td>
-                        <td class="py-2.5 px-3 text-right font-medium">${item.hasNutrition ? item.kcal : '-'}</td>
-                        <td class="py-2.5 px-3 text-right font-bold text-emerald-500">${item.hasNutrition ? item.protein : '-'}</td>
-                        <td class="py-2.5 px-3 text-right">${item.hasNutrition ? item.carbs : '-'}</td>
-                        <td class="py-2.5 px-3 text-right">${item.hasNutrition ? item.sugar : '-'}</td>
-                        <td class="py-2.5 px-3 text-right">${item.hasNutrition ? item.fat : '-'}</td>
-                        <td class="py-2.5 px-3 text-right">${item.hasNutrition ? item.sodium : '-'}</td>
+                        <td class="py-2.5 px-3 text-xs font-semibold text-[var(--muted-foreground)]">${optSummary || '-'}</td>
+                        <td class="py-2.5 px-3 text-right font-black text-lg text-[var(--primary)] whitespace-nowrap">${formatPrice(effPrice)}</td>
+                        <td class="py-2.5 px-3 text-center">
+                          <span class="px-3 py-1.5 rounded-lg ${btnAddClass} text-xs font-black">${dl.canOrder ? '+ 담기' : '⛔ 마감'}</span>
+                        </td>
                       </tr>
                     `;
                   }).join('')}
